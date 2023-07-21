@@ -28,14 +28,11 @@ from modules import script_callbacks
 ## ------------------------------ USER ARGS ------------------------------
 
 base_dir = scripts.basedir()
-print("Base:", base_dir)
 models_dir = os.path.join(base_dir, "assets", "pretrained_models")
-print("Models dir:", models_dir)
 outputs_dir = os.path.join(base_dir, "Result")
-print("Outputs:", outputs_dir)
 
 
-USE_COLAB = False
+
 USE_CUDA = True
 BATCH_SIZE = 32
 WORKSPACE = None
@@ -71,12 +68,13 @@ FACE_ENHANCER_LIST.extend(get_available_enhancer_names())
 
 
 ## ------------------------------ SET EXECUTION PROVIDER ------------------------------
+
 PROVIDER = ["CPUExecutionProvider"]
 
 if USE_CUDA:
     available_providers = onnxruntime.get_available_providers()
     if "CUDAExecutionProvider" in available_providers:
-        #print("\n********** Running on CUDA **********\n")
+        print("\n********** Running on CUDA **********\n")
         PROVIDER = ["CUDAExecutionProvider", "CPUExecutionProvider"]
     else:
         USE_CUDA = False
@@ -116,11 +114,6 @@ def load_nsfw_detector_model(path=os.path.join(models_dir, "nsfwmodel_281.pth"))
     global NSFW_DETECTOR
     if NSFW_DETECTOR is None:
         NSFW_DETECTOR = get_nsfw_detector(model_path=path, device=device)
-
-
-#load_face_analyser_model()
-#load_face_swapper_model()
-
 
 def unload_models():
     global FACE_SWAPPER, FACE_PARSER, NSFW_DETECTOR
@@ -528,6 +521,7 @@ def trim_and_reload(video_path, output_path, output_name, start_frame, stop_fram
 
 
 ## ------------------------------ GRADIO GUI ------------------------------
+
 class Script(scripts.Script):
     def __init__(self) -> None:
         super().__init__()
@@ -543,8 +537,7 @@ class Script(scripts.Script):
     
     def on_ui_tabs(self):
         return [(interface, "Swap", "swap")]
-        
-        
+             
 css = """
 footer{display:none !important}
 """
@@ -553,35 +546,13 @@ with gr.Blocks(css=css) as interface:
         with gr.Row():
             with gr.Column(scale=0.4):
                 with gr.Tab("📄 Swap Condition"):
-                    swap_option = gr.Dropdown(
-                        swap_options_list,
-                        info="Face to swap",
-                        multiselect=False,
-                        show_label=False,
-                        value=swap_options_list[0],
-                        interactive=True,
-                    )
-                    age = gr.Number(
-                        value=25, label="Value", interactive=True, visible=False
-                    )
-
+                    swap_option = gr.Dropdown(swap_options_list, info="Face to swap", multiselect=False, show_label=False, value=swap_options_list[0], interactive=True)
+                    age = gr.Number(value=25, label="Value", interactive=True, visible=False)
                 with gr.Tab("🎚️ Detection Settings"):
-                    detect_condition_dropdown = gr.Dropdown(
-                        detect_conditions,
-                        label="Condition",
-                        value=DETECT_CONDITION,
-                        interactive=True,
-                        info="This condition is only used when multiple faces are detected on source or specific image.",
-                    )
-                    detection_size = gr.Number(
-                        label="Detection Size", value=DETECT_SIZE, interactive=True
-                    )
-                    detection_threshold = gr.Number(
-                        label="Detection Threshold",
-                        value=DETECT_THRESH,
-                        interactive=True,
-                    )
-                    apply_detection_settings = gr.Button("Apply settings")
+                    detect_condition_dropdown = gr.Dropdown( detect_conditions, label="Condition", value=DETECT_CONDITION, interactive=True, info="This condition is only used when multiple faces are detected on source or specific image.")
+                    detection_size = gr.Number(label="Detection Size", value=DETECT_SIZE, interactive=True)
+                    detection_threshold = gr.Number(label="Detection Threshold", value=DETECT_THRESH, interactive=True)
+                    apply_detection_settings = gr.Button("Apply settings", variant="primary")
 
                 with gr.Tab("📤 Output Settings"):
                     output_directory = gr.Text(value=outputs_dir, label="Output Directory",  interactive=True)
@@ -590,47 +561,14 @@ with gr.Blocks(css=css) as interface:
 
                 with gr.Tab("🪄 Other Settings"):
                     with gr.Accordion("Advanced Mask", open=False):
-                        enable_face_parser_mask = gr.Checkbox(
-                            label="Enable Face Parsing",
-                            value=False,
-                            interactive=True,
-                        )
+                        enable_face_parser_mask = gr.Checkbox(label="Enable Face Parsing", value=False, interactive=True)
 
-                        mask_include = gr.Dropdown(
-                            mask_regions.keys(),
-                            value=MASK_INCLUDE,
-                            multiselect=True,
-                            label="Include",
-                            interactive=True,
-                        )
-                        mask_soft_kernel = gr.Number(
-                            label="Soft Erode Kernel",
-                            value=MASK_SOFT_KERNEL,
-                            minimum=3,
-                            interactive=True,
-                            visible = False
-                        )
-                        mask_soft_iterations = gr.Number(
-                            label="Soft Erode Iterations",
-                            value=MASK_SOFT_ITERATIONS,
-                            minimum=0,
-                            interactive=True,
+                        mask_include = gr.Dropdown(mask_regions.keys(), value=MASK_INCLUDE, multiselect=True, label="Include", interactive=True)
+                        mask_soft_kernel = gr.Number(label="Soft Erode Kernel", value=MASK_SOFT_KERNEL, minimum=3, interactive=True, visible = False)
+                        mask_soft_iterations = gr.Number(label="Soft Erode Iterations", value=MASK_SOFT_ITERATIONS, minimum=0, interactive=True)
+                        blur_amount = gr.Number(label="Mask Blur", value=MASK_BLUR_AMOUNT, minimum=0, interactive=True)
 
-                        )
-                        blur_amount = gr.Number(
-                            label="Mask Blur",
-                            value=MASK_BLUR_AMOUNT,
-                            minimum=0,
-                            interactive=True,
-                        )
-
-                    face_scale = gr.Slider(
-                        label="Face Scale",
-                        minimum=0,
-                        maximum=2,
-                        value=1,
-                        interactive=True,
-                    )
+                    face_scale = gr.Slider(label="Face Scale", minimum=0, maximum=2, value=1, interactive=True)
 
                     with gr.Accordion("Crop Mask", open=False):
                         crop_top = gr.Number(label="Top", value=0, minimum=0, interactive=True)
@@ -638,19 +576,11 @@ with gr.Blocks(css=css) as interface:
                         crop_left = gr.Number(label="Left", value=0, minimum=0, interactive=True)
                         crop_right = gr.Number(label="Right", value=0, minimum=0, interactive=True)
 
-                    enable_laplacian_blend = gr.Checkbox(
-                        label="Laplacian Blending",
-                        value=True,
-                        interactive=True,
-                    )
+                    enable_laplacian_blend = gr.Checkbox(label="Laplacian Blending", value=True, interactive=True)
 
-                    face_enhancer_name = gr.Dropdown(
-                        FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False, interactive=True
-                    )
+                    face_enhancer_name = gr.Dropdown(FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False,interactive=True)
 
-                source_image_input = gr.Image(
-                    label="Source face", type="filepath", interactive=True
-                )
+                source_image_input = gr.Image(label="Source face", type="filepath", interactive=True)
 
                 with gr.Box(visible=False) as specific_face:
                     for i in range(NUM_OF_SRC_SPECIFIC):
@@ -732,12 +662,12 @@ with gr.Blocks(css=css) as interface:
                         direc_input = gr.Text(label="Path", interactive=True)
 
             with gr.Column(scale=0.6):
-                info = gr.Markdown(value="...")
+                info = gr.Markdown(value="")
 
                 with gr.Row():
                     swap_button = gr.Button("✨ Swap", variant="primary")
-                    cancel_button = gr.Button("⛔ Cancel")
-                    unload_models_button = gr.Button(value="Unload Models", label="Unload Models" , variant="stop")
+                    cancel_button = gr.Button("⛔ Cancel", variant="stop")
+                    unload_models_button = gr.Button(value="🤖 Unload Models", label="Unload Models")
                     unload_models_button.click(unload_models)
                 preview_image = gr.Image(label="Output", interactive=False)
                 preview_video = gr.Video(
@@ -746,16 +676,16 @@ with gr.Blocks(css=css) as interface:
 
                 with gr.Row():
                     output_directory_button = gr.Button(
-                        "📂", interactive=True
+                        "📂 Open Result Folder", interactive=True
                     )
                     output_video_button = gr.Button(
-                        "🎬", interactive=True
+                        "🎬 Open Video", interactive=True
                     )
 
                 with gr.Box():
                     with gr.Row():
                         gr.Markdown(
-                            "### [🤝 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)"
+                            "### [🧩 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)"
                         )
                         gr.Markdown(
                             "### [🤝 Sponsor](https://github.com/sponsors/harisreedhar)"
@@ -765,9 +695,6 @@ with gr.Blocks(css=css) as interface:
                         )
                         gr.Markdown(
                             "### [⚠️ Disclaimer](https://github.com/harisreedhar/Swap-Mukham#disclaimer)"
-                        )
-                        gr.Markdown(
-                            "### [🌐 Run in Colab](https://colab.research.google.com/github/harisreedhar/Swap-Mukham/blob/main/swap_mukham_colab.ipynb)"
                         )
 
     ## ------------------------------ GRADIO EVENTS ------------------------------
