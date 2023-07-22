@@ -74,7 +74,7 @@ PROVIDER = ["CPUExecutionProvider"]
 if USE_CUDA:
     available_providers = onnxruntime.get_available_providers()
     if "CUDAExecutionProvider" in available_providers:
-        print("\n********** Running on CUDA **********\n")
+        #print("\n********** Running on CUDA **********\n")
         PROVIDER = ["CUDAExecutionProvider", "CPUExecutionProvider"]
     else:
         USE_CUDA = False
