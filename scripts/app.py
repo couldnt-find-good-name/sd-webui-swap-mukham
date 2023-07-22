@@ -15,7 +15,7 @@ import gradio as gr
 from tqdm import tqdm
 import concurrent.futures
 from moviepy.editor import VideoFileClip
-
+import requests
 from nsfw_detector import get_nsfw_detector
 from face_swapper import Inswapper, paste_to_whole, place_foreground_on_background
 from face_analyser import detect_conditions, get_analysed_data, swap_options_list
@@ -66,7 +66,6 @@ NSFW_DETECTOR = None
 FACE_ENHANCER_LIST = ["NONE"]
 FACE_ENHANCER_LIST.extend(get_available_enhancer_names())
 
-
 ## ------------------------------ SET EXECUTION PROVIDER ------------------------------
 
 PROVIDER = ["CPUExecutionProvider"]
@@ -88,6 +87,9 @@ EMPTY_CACHE = lambda: torch.cuda.empty_cache() if device == "cuda" else None
 
 ## ------------------------------ LOAD MODELS ------------------------------
 
+base_dir = scripts.basedir()
+models_dir = os.path.join(base_dir, "assets", "pretrained_models")
+
 def load_face_analyser_model(name="buffalo_l"):
     global FACE_ANALYSER
     if FACE_ANALYSER is None:
@@ -95,9 +97,6 @@ def load_face_analyser_model(name="buffalo_l"):
         FACE_ANALYSER.prepare(
             ctx_id=0, det_size=(DETECT_SIZE, DETECT_SIZE), det_thresh=DETECT_THRESH
         )
-
-base_dir = scripts.basedir()
-models_dir = os.path.join(base_dir, "assets", "pretrained_models")
 
 def load_face_swapper_model(path=os.path.join(models_dir, "inswapper_128.onnx")):
     global FACE_SWAPPER
@@ -124,7 +123,6 @@ def unload_models():
     return
 
 ## ------------------------------ MAIN PROCESS ------------------------------
-
 
 def process(
     input_type,
@@ -537,7 +535,48 @@ class Script(scripts.Script):
     
     def on_ui_tabs(self):
         return [(interface, "Swap", "swap")]
-             
+        
+
+def on_button_click(): 
+    models_download_dir = os.path.join(base_dir, "assets", "pretrained_models")
+    download_models(models_download_dir, urls)        
+    
+        
+def download_models(models_download_dir, urls):
+    for idx, url in enumerate(urls, start=1):
+        try:
+            # Descargamos el archivo desde la URL
+            response = requests.get(url)
+
+            # Verificamos que la descarga haya sido exitosa
+            response.raise_for_status()
+
+            # Extraemos el nombre del archivo de la URL
+            filename = os.path.basename(url)
+
+            # Creamos la ruta completa del archivo descargado
+            file_path = os.path.join(models_download_dir, filename)
+
+            # Guardamos el contenido descargado en el archivo
+            with open(file_path, "wb") as f:
+                f.write(response.content)
+
+            print(f"Descarga del archivo {filename} completada correctamente.")
+        except requests.exceptions.RequestException as e:
+            print(f"No se pudo descargar el archivo {idx}. Error: {e}")
+        except Exception as e:
+            print(f"Ocurrió un error desconocido al procesar el archivo {idx}. Error: {e}")
+            
+urls = [
+    "https://huggingface.co/deepinsight/inswapper/resolve/main/inswapper_128.onnx",
+    "https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth",
+    "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth",
+    "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth",
+    "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth",
+    "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x8.pth",
+    "https://github.com/Whiax/NSFW-Classifier/raw/main/nsfwmodel_281.pth",
+]   
+            
 css = """
 footer{display:none !important}
 """
@@ -545,21 +584,21 @@ with gr.Blocks(css=css) as interface:
     with gr.Row():
         with gr.Row():
             with gr.Column(scale=0.4):
-                with gr.Tab("📄 Swap Condition"):
+                with gr.Tab("📄 Swap"):
                     swap_option = gr.Dropdown(swap_options_list, info="Face to swap", multiselect=False, show_label=False, value=swap_options_list[0], interactive=True)
                     age = gr.Number(value=25, label="Value", interactive=True, visible=False)
-                with gr.Tab("🎚️ Detection Settings"):
+                with gr.Tab("🎚️ Detection"):
                     detect_condition_dropdown = gr.Dropdown( detect_conditions, label="Condition", value=DETECT_CONDITION, interactive=True, info="This condition is only used when multiple faces are detected on source or specific image.")
                     detection_size = gr.Number(label="Detection Size", value=DETECT_SIZE, interactive=True)
                     detection_threshold = gr.Number(label="Detection Threshold", value=DETECT_THRESH, interactive=True)
                     apply_detection_settings = gr.Button("Apply settings", variant="primary")
 
-                with gr.Tab("📤 Output Settings"):
+                with gr.Tab("📤 Output"):
                     output_directory = gr.Text(value=outputs_dir, label="Output Directory",  interactive=True)
                     output_name = gr.Text(label="Output Name", value="Image", interactive=True)
                     keep_output_sequence = gr.Checkbox(value=False, label="Keep output sequence", interactive=True)
 
-                with gr.Tab("🪄 Other Settings"):
+                with gr.Tab("🪄 Others"):
                     with gr.Accordion("Advanced Mask", open=False):
                         enable_face_parser_mask = gr.Checkbox(label="Enable Face Parsing", value=False, interactive=True)
 
@@ -592,26 +631,13 @@ with gr.Blocks(css=css) as interface:
                         code += f"\n\t\ttrg{idx} = gr.Image(interactive=True, type='numpy', label='Specific Face {idx}')"
                         exec(code)
 
-                    distance_slider = gr.Slider(
-                        minimum=0,
-                        maximum=2,
-                        value=0.6,
-                        interactive=True,
-                        label="Distance",
-                        info="Lower distance is more similar and higher distance is less similar to the target face.",
-                    )
+                    distance_slider = gr.Slider(minimum=0, maximum=2, value=0.6, interactive=True, label="Distance", info="Lower distance is more similar and higher distance is less similar to the target face.")
 
                 with gr.Group():
-                    input_type = gr.Radio(
-                        ["Image", "Video", "Directory"],
-                        label="Target Type",
-                        value="Image",
-                    )
+                    input_type = gr.Radio(["Image", "Video", "Directory"], label="Target Type", value="Video")
 
                     with gr.Box(visible=False) as input_image_group:
-                        image_input = gr.Image(
-                            label="Target Image", interactive=True, type="filepath"
-                        )
+                        image_input = gr.Image(label="Target Image", interactive=True, type="filepath")
 
                     with gr.Box(visible=True) as input_video_group:
                         vid_widget = gr.Video
@@ -621,42 +647,13 @@ with gr.Blocks(css=css) as interface:
                         with gr.Accordion("✂️ Trim video", open=False):
                             with gr.Column():
                                 with gr.Row():
-                                    set_slider_range_btn = gr.Button(
-                                        "Set frame range", interactive=True
-                                    )
-                                    show_trim_preview_btn = gr.Checkbox(
-                                        label="Show frame when slider change",
-                                        value=True,
-                                        interactive=True,
-                                    )
+                                    set_slider_range_btn = gr.Button("Set frame range", interactive=True)
+                                    show_trim_preview_btn = gr.Checkbox(label="Show frame when slider change", value=True, interactive=True)
 
-                                video_fps = gr.Number(
-                                    value=30,
-                                    interactive=False,
-                                    label="Fps",
-                                    visible=False,
-                                )
-                                start_frame = gr.Slider(
-                                    minimum=0,
-                                    maximum=1,
-                                    value=0,
-                                    step=1,
-                                    interactive=True,
-                                    label="Start Frame",
-                                    info="",
-                                )
-                                end_frame = gr.Slider(
-                                    minimum=0,
-                                    maximum=1,
-                                    value=1,
-                                    step=1,
-                                    interactive=True,
-                                    label="End Frame",
-                                    info="",
-                                )
-                            trim_and_reload_btn = gr.Button(
-                                "Trim and Reload", interactive=True
-                            )
+                                video_fps = gr.Number(value=30, interactive=False, label="Fps", visible=False)
+                                start_frame = gr.Slider(minimum=0, maximum=1, value=0, step=1, interactive=True, label="Start Frame", info="")
+                                end_frame = gr.Slider(minimum=0, maximum=1, value=1, step=1, interactive=True, label="End Frame", info="")
+                            trim_and_reload_btn = gr.Button("Trim and Reload", interactive=True)
 
                     with gr.Box(visible=False) as input_directory_group:
                         direc_input = gr.Text(label="Path", interactive=True)
@@ -670,32 +667,44 @@ with gr.Blocks(css=css) as interface:
                     unload_models_button = gr.Button(value="🤖 Unload Models", label="Unload Models")
                     unload_models_button.click(unload_models)
                 preview_image = gr.Image(label="Output", interactive=False)
-                preview_video = gr.Video(
-                    label="Output", interactive=False, visible=False
-                )
+                preview_video = gr.Video(label="Output", interactive=False, visible=False)
 
                 with gr.Row():
-                    output_directory_button = gr.Button(
-                        "📂 Open Result Folder", interactive=True
-                    )
-                    output_video_button = gr.Button(
-                        "🎬 Open Video", interactive=True
-                    )
-
+                    output_directory_button = gr.Button("📂 Open Result Folder", interactive=True)
+                    output_video_button = gr.Button("🎬 Open Video", interactive=True)
                 with gr.Box():
                     with gr.Row():
-                        gr.Markdown(
-                            "### [🧩 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)"
-                        )
-                        gr.Markdown(
-                            "### [🤝 Sponsor](https://github.com/sponsors/harisreedhar)"
-                        )
-                        gr.Markdown(
-                            "### [👨‍💻 Source code](https://github.com/harisreedhar/Swap-Mukham)"
-                        )
-                        gr.Markdown(
-                            "### [⚠️ Disclaimer](https://github.com/harisreedhar/Swap-Mukham#disclaimer)"
-                        )
+                        button_models_download = gr.Button(value="🔽 Download Models", label="Download Models")
+                        button_models_download.click(fn=on_button_click)
+                    with gr.Row():
+                        gr.HTML("""
+                        <br>
+                        <p><span class="red-text"><b>⚠️ ATENTION!!!</b></span> 79999_iter.pth must be downloaded manually, then copy it in sd-webui-swap-mukham/assets/pretrained_models  
+                        <a href="https://drive.google.com/file/d/154JgKpzCPW82qINcVieuPH3fZ2e0P812/view" class="download-link">Download 79999_iter.pth</a>
+                        </p>
+                        <style>
+                            .red-text {
+                              color: red;
+                            }
+                            .download-link {
+                                text-decoration: none;
+                                color: #000;
+                                background-color: #f0f0f0;
+                                padding: 2px 4px;
+                                border-radius: 4px;
+                            }
+                            .download-link:hover {
+                                background-color: #ddd;
+                            }
+                        </style>
+                        """)
+                with gr.Box():
+                    with gr.Row():
+                        gr.Markdown("### [🧩 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)")
+                        gr.Markdown("### [🤝 Sponsor](https://github.com/sponsors/harisreedhar)")
+                        gr.Markdown("### [👨‍💻 Source code](https://github.com/harisreedhar/Swap-Mukham)")
+                        gr.Markdown("### [⚠️ Disclaimer](https://github.com/harisreedhar/Swap-Mukham#disclaimer)")
+
 
     ## ------------------------------ GRADIO EVENTS ------------------------------
 
