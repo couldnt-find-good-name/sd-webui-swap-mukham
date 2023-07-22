@@ -56,7 +56,6 @@ def get_single_face(faces, method="best detection"):
     elif method == "smallest":
         return sorted(faces, key=lambda face: (face["bbox"][2] - face["bbox"][0]) * (face["bbox"][3] - face["bbox"][1]))[0]
 
-
 def analyse_face(image, model, return_single_face=True, detect_condition="best detection", scale=1.0):
     faces = model.get(image)
     if scale != 1: # landmark-scale
@@ -71,12 +70,10 @@ def analyse_face(image, model, return_single_face=True, detect_condition="best d
 
     return get_single_face(faces, method=detect_condition)
 
-
 def cosine_distance(a, b):
     a /= np.linalg.norm(a)
     b /= np.linalg.norm(b)
     return 1 - np.dot(a, b)
-
 
 def get_analysed_data(face_analyser, image_sequence, source_data, swap_condition="All face", detect_condition="left most", scale=1.0):
     if swap_condition != "Specific Face":
