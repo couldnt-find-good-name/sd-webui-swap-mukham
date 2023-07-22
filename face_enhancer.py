@@ -20,7 +20,6 @@ supported_enhancers = {
     "REAL-ESRGAN 2x": ("./assets/pretrained_models/RealESRGAN_x2.pth", realesrgan_runner),
     "REAL-ESRGAN 4x": ("./assets/pretrained_models/RealESRGAN_x4.pth", realesrgan_runner),
     "REAL-ESRGAN 8x": ("./assets/pretrained_models/RealESRGAN_x8.pth", realesrgan_runner),
-    "4x_RealisticRescaler_100000_G": ("./assets/pretrained_models/4x_RealisticRescaler_100000_G.pth", realesrgan_runner),
 }
 
 def get_available_enhancer_names():
@@ -48,10 +47,6 @@ def load_face_enhancer_model(name='GFPGAN', device="cpu"):
     elif name == 'REAL-ESRGAN 8x':
         model = RealESRGAN(device, scale=8)
         model.load_weights(model_path, download=False)
-    elif name == '4x_RealisticRescaler_100000_G':
-        model = RealESRGAN(device, scale=4)
-        model.load_weights(model_path, download=False)           
     else:
         model = None
     return (model, model_runner)
-
