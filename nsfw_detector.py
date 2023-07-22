@@ -30,15 +30,36 @@ class NSFWClassifier(nn.Module):
         return x
 
     def is_nsfw(self, img_paths, threshold = 0.98):
-        pass
+        skip_step = 1
+        total_len = len(img_paths)
+        if total_len < 100: skip_step = 1
+        if total_len > 100 and total_len < 500: skip_step = 10
+        if total_len > 500 and total_len < 1000: skip_step = 20
+        if total_len > 1000 and total_len < 10000: skip_step = 50
+        if total_len > 10000: skip_step = 100
+
+        for idx in tqdm(range(0, total_len, skip_step), total=int(total_len // skip_step), desc="Checking for NSFW contents"):
+            _img = Image.open(img_paths[idx]).convert('RGB')
+            img = _img.resize((224, 224))
+            img = np.array(img)/255
+            img = T.ToTensor()(img).unsqueeze(0).float()
+            if next(self.parameters()).is_cuda:
+                img = img.cuda()
+            with torch.no_grad():
+                score = self.forward(img).sigmoid()[0].item()
+            if score > threshold:
+                print(f"Detected nsfw score:{score}")
+                _img.save("nsfw.jpg")
+                return True
+        return False
 
 def get_nsfw_detector(model_path='nsfwmodel_281.pth', device="cpu"):
-        #load base model
-        nsfw_model = NSFWClassifier()
-        nsfw_model = nsfw_model.eval()
-        #load linear weights
-        linear_pth = model_path
-        linear_state_dict = torch.load(linear_pth, map_location='cpu')
-        nsfw_model.linear_probe.load_state_dict(linear_state_dict)
-        nsfw_model = nsfw_model.to(device)
-        return nsfw_model
+    #load base model
+    nsfw_model = NSFWClassifier()
+    nsfw_model = nsfw_model.eval()
+    #load linear weights
+    linear_pth = model_path
+    linear_state_dict = torch.load(linear_pth, map_location='cpu')
+    nsfw_model.linear_probe.load_state_dict(linear_state_dict)
+    nsfw_model = nsfw_model.to(device)
+    return nsfw_model
