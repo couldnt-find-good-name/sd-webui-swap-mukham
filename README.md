@@ -1,6 +1,6 @@
 ## Description
 
-A simple face swapper adapted to Automatic1111 [harisreedhar](from https://github.com/harisreedhar/Swap-Mukham) and based on insightface inswapper heavily inspired by roop.
+A simple face swapper adapted to Automatic1111 [harisreedhar](https://github.com/harisreedhar/Swap-Mukham) and based on insightface inswapper heavily inspired by roop.
 
 ## Notes:
 
