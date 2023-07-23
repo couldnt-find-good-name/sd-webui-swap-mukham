@@ -63,7 +63,8 @@ Remember, technology should be used to empower and inspire, not to harm or decei
 
 
 ## Acknowledgements
-
+- [Swap-Mukham](https://github.com/harisreedhar/Swap-Mukham)
+- [Automatic1111](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
 - [Roop](https://github.com/s0md3v/roop)
 - [Insightface](https://github.com/deepinsight)
 - [Ffmpeg](https://ffmpeg.org/)
