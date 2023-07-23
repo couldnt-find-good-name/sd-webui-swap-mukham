@@ -11,10 +11,6 @@ from threading import Thread
 from moviepy.editor import VideoFileClip, ImageSequenceClip
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
-
-logo_image = cv2.imread("./assets/images/logo.png", cv2.IMREAD_UNCHANGED)
-
-
 quality_types = ["poor", "low", "medium", "high", "best"]
 
 
@@ -142,7 +138,7 @@ class ProcessBar:
         return info_text
 
 
-def add_logo_to_image(img, logo=logo_image):
+def add_logo_to_image(img):
     logo_size = int(img.shape[1] * 0.1)
     logo = cv2.resize(logo, (logo_size, logo_size))
     if logo.shape[2] == 4:
