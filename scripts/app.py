@@ -25,7 +25,7 @@ from utils import trim_video, StreamerThread, ProcessBar, open_directory, split_
 import modules.scripts as scripts
 from modules import script_callbacks
 
-## ------------------------------ USER ARGS ------------------------------
+## _______________________________________________ USER ARGS _______________________________________________
 
 base_dir = scripts.basedir()
 models_dir = os.path.join(base_dir, "assets", "pretrained_models")
@@ -66,7 +66,7 @@ NSFW_DETECTOR = None
 FACE_ENHANCER_LIST = ["NONE"]
 FACE_ENHANCER_LIST.extend(get_available_enhancer_names())
 
-## ------------------------------ SET EXECUTION PROVIDER ------------------------------
+## _______________________________________________ SET EXECUTION PROVIDER _______________________________________________
 
 PROVIDER = ["CPUExecutionProvider"]
 
@@ -85,7 +85,7 @@ else:
 device = "cuda" if USE_CUDA else "cpu"
 EMPTY_CACHE = lambda: torch.cuda.empty_cache() if device == "cuda" else None
 
-## ------------------------------ LOAD MODELS ------------------------------
+## _______________________________________________ LOAD MODELS _______________________________________________
 
 base_dir = scripts.basedir()
 models_dir = os.path.join(base_dir, "assets", "pretrained_models")
@@ -119,10 +119,10 @@ def unload_models():
     FACE_SWAPPER = None
     FACE_PARSER = None
     NSFW_DETECTOR = None
-    print("### Mukham INFO: Unloaded Models")
+    yield "INFO: Models unloaded."
     return
 
-## ------------------------------ MAIN PROCESS ------------------------------
+## _______________________________________________ MAIN PROCESS _______________________________________________
 
 def process(
     input_type,
@@ -155,7 +155,7 @@ def process(
     global PREVIEW
     WORKSPACE, OUTPUT_FILE, PREVIEW = None, None, None
 
-    ## ------------------------------ GUI UPDATE FUNC ------------------------------
+## _______________________________________________ GUI UPDATE FUNC _______________________________________________
 
     def ui_before():
         return (
@@ -185,24 +185,25 @@ def process(
     total_exec_time = lambda start_time: divmod(time.time() - start_time, 60)
     get_finsh_text = lambda start_time: f"✔️ Completed in {int(total_exec_time(start_time)[0])} min {int(total_exec_time(start_time)[1])} sec."
 
-    ## ------------------------------ PREPARE INPUTS & LOAD MODELS ------------------------------
-    yield "### \n ⌛ Loading NSFW detector model...", *ui_before()
+## _______________________________________________ PREPARE INPUTS & LOAD MODELS _______________________________________________
+
+    yield "⌛ Loading NSFW detector model...", *ui_before()
     load_nsfw_detector_model()
     
-    yield "### \n ⌛ Loading face analyser model...", *ui_before()
+    yield "⌛ Loading face analyser model...", *ui_before()
     load_face_analyser_model()
 
-    yield "### \n ⌛ Loading face swapper model...", *ui_before()
+    yield "⌛ Loading face swapper model...", *ui_before()
     load_face_swapper_model()
 
     if face_enhancer_name != "NONE":
-        yield f"### \n ⌛ Loading {face_enhancer_name} model...", *ui_before()
+        yield f"⌛ Loading {face_enhancer_name} model...", *ui_before()
         FACE_ENHANCER = load_face_enhancer_model(name=face_enhancer_name, device=device)
     else:
         FACE_ENHANCER = None
 
     if enable_face_parser:
-        yield "### \n ⌛ Loading face parsing model...", *ui_before()
+        yield "⌛ Loading face parsing model...", *ui_before()
         load_face_parser_model()
 
     includes = mask_regions_to_list(mask_includes)
@@ -212,19 +213,19 @@ def process(
     sources = specifics[:half]
     specifics = specifics[half:]
 
-    ## ------------------------------ ANALYSE & SWAP FUNC ------------------------------
+## _______________________________________________ ANALYSE & SWAP FUNC _______________________________________________
 
     def swap_process(image_sequence):
-        yield "### \n ⌛ Checking contents...", *ui_before()
+        yield "⌛ Checking contents...", *ui_before()
         nsfw = NSFW_DETECTOR.is_nsfw(image_sequence)
         if nsfw:
             message = "NSFW Content detected !!!"
-            yield f"### \n 🔞 {message}", *ui_before()
+            yield f"🔞 {message}", *ui_before()
             assert not nsfw, message
             return False
         EMPTY_CACHE()
 
-        yield "### \n ⌛ Analysing face data...", *ui_before()
+        yield "⌛ Analysing face data...", *ui_before()
         if condition != "Specific Face":
             source_data = source_path, age
         else:
@@ -238,18 +239,18 @@ def process(
             scale=face_scale
         )
 
-        yield "### \n ⌛ Swapping faces...", *ui_before()
+        yield "⌛ Swapping faces...", *ui_before()
         preds, aimgs, matrs = FACE_SWAPPER.batch_forward(whole_frame_list, analysed_targets, analysed_sources)
         EMPTY_CACHE()
 
         if enable_face_parser:
-            yield "### \n ⌛ Applying face-parsing mask...", *ui_before()
+            yield "⌛ Applying face-parsing mask...", *ui_before()
             for idx, (pred, aimg) in tqdm(enumerate(zip(preds, aimgs)), total=len(preds), desc="Face parsing"):
                 preds[idx] = swap_regions(pred, aimg, FACE_PARSER, smooth_mask, includes=includes, blur=int(blur_amount))
         EMPTY_CACHE()
 
         if face_enhancer_name != "NONE":
-            yield f"### \n ⌛ Enhancing faces with {face_enhancer_name}...", *ui_before()
+            yield f"⌛ Enhancing faces with {face_enhancer_name}...", *ui_before()
             for idx, pred in tqdm(enumerate(preds), total=len(preds), desc=f"{face_enhancer_name}"):
                 enhancer_model, enhancer_model_runner = FACE_ENHANCER
                 pred = enhancer_model_runner(pred, enhancer_model)
@@ -266,7 +267,7 @@ def process(
         split_matrs = split_list_by_lengths(matrs, num_faces_per_frame)
         del matrs
 
-        yield "### \n ⌛ Post-processing...", *ui_before()
+        yield "⌛ Post-processing...", *ui_before()
         def post_process(frame_idx, frame_img, split_preds, split_aimgs, split_matrs, enable_laplacian_blend, crop_top, crop_bott, crop_left, crop_right):
             whole_img_path = frame_img
             whole_img = cv2.imread(whole_img_path)
@@ -310,7 +311,7 @@ def process(
             crop_left,
             crop_right
         )
-    ## ------------------------------ IMAGE ------------------------------
+## _______________________________________________ IMAGE _______________________________________________
 
     if input_type == "Image":
         target = cv2.imread(image_path)
@@ -326,13 +327,13 @@ def process(
 
         yield get_finsh_text(start_time), *ui_after()
 
-    ## ------------------------------ VIDEO ------------------------------
+## _______________________________________________ VIDEO _______________________________________________
 
     elif input_type == "Video":
         temp_path = os.path.join(output_path, output_name, "sequence")
         os.makedirs(temp_path, exist_ok=True)
 
-        yield "### \n ⌛ Extracting video frames...", *ui_before()
+        yield "⌛ Extracting video frames...", *ui_before()
         image_sequence = []
         cap = cv2.VideoCapture(video_path)
         curr_idx = 0
@@ -349,12 +350,12 @@ def process(
         for info_update in swap_process(image_sequence):
             yield info_update
 
-        yield "### \n ⌛ Merging sequence...", *ui_before()
+        yield "⌛ Merging sequence...", *ui_before()
         output_video_path = os.path.join(output_path, output_name + ".mp4")
         merge_img_sequence_from_ref(video_path, image_sequence, output_video_path)
 
         if os.path.exists(temp_path) and not keep_output_sequence:
-            yield "### \n ⌛ Removing temporary files...", *ui_before()
+            yield "⌛ Removing temporary files...", *ui_before()
             shutil.rmtree(temp_path)
 
         WORKSPACE = output_path
@@ -362,7 +363,7 @@ def process(
 
         yield get_finsh_text(start_time), *ui_after_vid()
 
-    ## ------------------------------ DIRECTORY ------------------------------
+## _______________________________________________ DIRECTORY _______________________________________________
 
     elif input_type == "Directory":
         extensions = ["jpg", "jpeg", "png", "bmp", "tiff", "ico", "webp"]
@@ -388,13 +389,13 @@ def process(
 
         yield get_finsh_text(start_time), *ui_after()
 
-    ## ------------------------------ STREAM ------------------------------
+## _______________________________________________ STREAM _______________________________________________
 
     elif input_type == "Stream":
         pass
 
 
-## ------------------------------ GRADIO FUNC ------------------------------
+## _______________________________________________ GRADIO FUNC _______________________________________________
 
 
 def update_radio(value):
@@ -472,7 +473,7 @@ def video_changed(video_path):
 
 
 def analyse_settings_changed(detect_condition, detection_size, detection_threshold):
-    yield "### \n ⌛ Applying new values..."
+    yield "⌛ Applying new values..."
     global FACE_ANALYSER
     global DETECT_CONDITION
     DETECT_CONDITION = detect_condition
@@ -482,7 +483,7 @@ def analyse_settings_changed(detect_condition, detection_size, detection_thresho
         det_size=(int(detection_size), int(detection_size)),
         det_thresh=float(detection_threshold),
     )
-    yield f"### \n ✔️ Applied detect condition:{detect_condition}, detection size: {detection_size}, detection threshold: {detection_threshold}"
+    yield f"✔️ Applied detect condition:{detect_condition}, detection size: {detection_size}, detection threshold: {detection_threshold}"
 
 
 def stop_running():
@@ -508,17 +509,17 @@ def slider_changed(show_frame, video_path, frame_index):
 
 
 def trim_and_reload(video_path, output_path, output_name, start_frame, stop_frame):
-    yield video_path, f"### \n ⌛ Trimming video frame {start_frame} to {stop_frame}..."
+    yield video_path, f"⌛ Trimming video frame {start_frame} to {stop_frame}..."
     try:
         output_path = os.path.join(output_path, output_name)
         trimmed_video = trim_video(video_path, output_path, start_frame, stop_frame)
-        yield trimmed_video, "### \n ✔️ Video trimmed and reloaded."
+        yield trimmed_video, "✔️ Video trimmed and reloaded."
     except Exception as e:
         print(e)
-        yield video_path, "### \n ❌ Video trimming failed. See console for more info."
+        yield video_path, "❌ Video trimming failed. See console for more info."
 
 
-## ------------------------------ GRADIO GUI ------------------------------
+## _______________________________________________ GRADIO GUI _______________________________________________
 
 class Script(scripts.Script):
     def __init__(self) -> None:
@@ -535,42 +536,55 @@ class Script(scripts.Script):
     
     def on_ui_tabs(self):
         return [(interface, "Swap", "swap")]
-        
 
-def on_button_click(): 
+def on_button_click():
+    yield "📥 Downloading models... 🕐 Please wait..."
     models_download_dir = os.path.join(base_dir, "assets", "pretrained_models")
-    download_models(models_download_dir, urls)        
-    
-        
-def download_models(models_download_dir, urls):
-    for idx, url in enumerate(urls, start=1):
-        try:
-            # Descargamos el archivo desde la URL
-            response = requests.get(url)
+    num_urls = len(urls)
+    num_downloaded = 0
+    for url in urls:
+        if download_models(models_download_dir, url):
+            num_downloaded += 1
 
-            # Verificamos que la descarga haya sido exitosa
-            response.raise_for_status()
+    if num_downloaded == num_urls:
+        yield "✅ Download Completed."
+    time.sleep(7)
+    yield "📜 Now you can use the tool. Congratulations."
+    time.sleep(5)
+    yield ""
 
-            # Extraemos el nombre del archivo de la URL
-            filename = os.path.basename(url)
+def download_models(models_download_dir, url):
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        filename = os.path.basename(url)
+        file_path = os.path.join(models_download_dir, filename)
 
-            # Creamos la ruta completa del archivo descargado
-            file_path = os.path.join(models_download_dir, filename)
+        if os.path.exists(file_path):
+            print(f"{filename} already exists. Skipping download.")
+            return True
 
-            # Guardamos el contenido descargado en el archivo
-            with open(file_path, "wb") as f:
-                f.write(response.content)
+        total_size = int(response.headers.get('content-length', 0))
+        block_size = 1024  # 1 KB
 
-            print(f"Descarga del archivo {filename} completada correctamente.")
-        except requests.exceptions.RequestException as e:
-            print(f"No se pudo descargar el archivo {idx}. Error: {e}")
-        except Exception as e:
-            print(f"Ocurrió un error desconocido al procesar el archivo {idx}. Error: {e}")
-            
+        with open(file_path, "wb") as f, tqdm(
+                total=total_size, unit='iB', unit_scale=True,
+                desc=f"Downloading {filename}", dynamic_ncols=True) as progress_bar:
+            for data in response.iter_content(block_size):
+                f.write(data)
+                progress_bar.update(len(data))
+        return True
+
+    except requests.exceptions.RequestException as e:
+        print(f"Couldn't download {filename}. Error: {e}")
+        return False
+    except Exception as e:
+        print(f"Unknown error while downloading {filename}. Error: {e}")
+        return False
+
 urls = [
     "https://huggingface.co/deepinsight/inswapper/resolve/main/inswapper_128.onnx",
     "https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth",
-    "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth",
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth",
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth",
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x8.pth",
@@ -584,10 +598,10 @@ with gr.Blocks(css=css) as interface:
     with gr.Row():
         with gr.Row():
             with gr.Column(scale=0.4):
-                with gr.Tab("📄 Swap"):
-                    swap_option = gr.Dropdown(swap_options_list, info="Face to swap", multiselect=False, show_label=False, value=swap_options_list[0], interactive=True)
-                    age = gr.Number(value=25, label="Value", interactive=True, visible=False)
-                with gr.Tab("🎚️ Detection"):
+                with gr.Tab("↔️ Swap"):
+                    swap_option = gr.Dropdown(swap_options_list, label="Face to swap", multiselect=False, show_label=True, value=swap_options_list[0], interactive=True)
+                    age = gr.Number(value=25, label="Age", info="Im not sure if this work", interactive=True, visible=False)
+                with gr.Tab("🔍 Detection"):
                     detect_condition_dropdown = gr.Dropdown( detect_conditions, label="Condition", value=DETECT_CONDITION, interactive=True, info="This condition is only used when multiple faces are detected on source or specific image.")
                     detection_size = gr.Number(label="Detection Size", value=DETECT_SIZE, interactive=True)
                     detection_threshold = gr.Number(label="Detection Threshold", value=DETECT_THRESH, interactive=True)
@@ -619,7 +633,7 @@ with gr.Blocks(css=css) as interface:
 
                     face_enhancer_name = gr.Dropdown(FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False,interactive=True)
 
-                source_image_input = gr.Image(label="Source face", type="filepath", interactive=True)
+                source_image_input = gr.Image(label="Input face", type="filepath", interactive=True)
 
                 with gr.Box(visible=False) as specific_face:
                     for i in range(NUM_OF_SRC_SPECIFIC):
@@ -634,7 +648,7 @@ with gr.Blocks(css=css) as interface:
                     distance_slider = gr.Slider(minimum=0, maximum=2, value=0.6, interactive=True, label="Distance", info="Lower distance is more similar and higher distance is less similar to the target face.")
 
                 with gr.Group():
-                    input_type = gr.Radio(["Image", "Video", "Directory"], label="Target Type", value="Video")
+                    input_type = gr.Radio(["Image", "Video", "Directory"], label="Target", value="Video")
 
                     with gr.Box(visible=False) as input_image_group:
                         image_input = gr.Image(label="Target Image", interactive=True, type="filepath")
@@ -659,23 +673,25 @@ with gr.Blocks(css=css) as interface:
                         direc_input = gr.Text(label="Path", interactive=True)
 
             with gr.Column(scale=0.6):
-                info = gr.Markdown(value="")
+                info = gr.HTML(value="")
 
                 with gr.Row():
                     swap_button = gr.Button("✨ Swap", variant="primary")
                     cancel_button = gr.Button("⛔ Cancel", variant="stop")
-                    unload_models_button = gr.Button(value="🤖 Unload Models", label="Unload Models")
-                    unload_models_button.click(unload_models)
+                    
                 preview_image = gr.Image(label="Output", interactive=False)
                 preview_video = gr.Video(label="Output", interactive=False, visible=False)
 
+                with gr.Row():
+                    info2 = gr.HTML(value="")
                 with gr.Row():
                     output_directory_button = gr.Button("📂 Open Result Folder", interactive=True)
                     output_video_button = gr.Button("🎬 Open Video", interactive=True)
                 with gr.Box():
                     with gr.Row():
                         button_models_download = gr.Button(value="🔽 Download Models", label="Download Models")
-                        button_models_download.click(fn=on_button_click)
+                        unload_models_button = gr.Button(value="🤖 Unload Models", label="Unload Models")
+
                     with gr.Row():
                         gr.HTML("""
                         <br>
@@ -705,9 +721,10 @@ with gr.Blocks(css=css) as interface:
                         gr.Markdown("### [👨‍💻 Source code](https://github.com/harisreedhar/Swap-Mukham)")
                         gr.Markdown("### [⚠️ Disclaimer](https://github.com/harisreedhar/Swap-Mukham#disclaimer)")
 
+## _______________________________________________ GRADIO EVENTS _______________________________________________
 
-    ## ------------------------------ GRADIO EVENTS ------------------------------
-
+    unload_models_button.click(unload_models, outputs=[info2], show_progress=True,)
+    button_models_download.click(fn=on_button_click, outputs=[info2], show_progress=True,)
     set_slider_range_event = set_slider_range_btn.click(
         video_changed,
         inputs=[video_input],
@@ -817,5 +834,4 @@ with gr.Blocks(css=css) as interface:
     )
 
 script = Script()
-
 script_callbacks.on_ui_tabs(script.on_ui_tabs)
