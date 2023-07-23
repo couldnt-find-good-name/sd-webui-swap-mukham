@@ -11,11 +11,9 @@ A simple face swapper based on insightface inswapper heavily inspired by roop.
 - Face parsing mask
 - colab support
 
-https://github.com/harisreedhar/Swap-Mukham/assets/46858047/d8f2389a-3078-43a1-94f8-77f30a8c6686
-
 ### Comparison
 
-![10](https://github.com/harisreedhar/Swap-Mukham/assets/46858047/37035b9d-915d-4be6-9e21-5852c88a3e12)
+![10]()
 
 
 ## Installation
