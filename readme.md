@@ -75,7 +75,8 @@ Remember, technology should be used to empower and inspire, not to harm or decei
 - [NSFW-Classifier](https://github.com/Whiax/NSFW-Classifier)
 
 ## Donations
-[![Buy Me a Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-blue.png](https://www.buymeacoffee.com/rauldlnx10p)
+[![Buy Me a Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-blue.png)](https://www.buymeacoffee.com/rauldlnx10p)
+
 
 
 
