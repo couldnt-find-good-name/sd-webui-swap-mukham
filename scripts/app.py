@@ -16,7 +16,6 @@ from tqdm import tqdm
 import concurrent.futures
 from moviepy.editor import VideoFileClip
 import requests
-from nsfw_detector import get_nsfw_detector
 from face_swapper import Inswapper, paste_to_whole, place_foreground_on_background
 from face_analyser import detect_conditions, get_analysed_data, swap_options_list
 from face_enhancer import get_available_enhancer_names, load_face_enhancer_model
@@ -62,7 +61,6 @@ FACE_SWAPPER = None
 FACE_ANALYSER = None
 FACE_ENHANCER = None
 FACE_PARSER = None
-NSFW_DETECTOR = None
 FACE_ENHANCER_LIST = ["NONE"]
 FACE_ENHANCER_LIST.extend(get_available_enhancer_names())
 
@@ -109,17 +107,11 @@ def load_face_parser_model(path=os.path.join(models_dir, "79999_iter.pth")):
     if FACE_PARSER is None:
         FACE_PARSER = init_parser(path, mode=device)
 
-def load_nsfw_detector_model(path=os.path.join(models_dir, "nsfwmodel_281.pth")):
-    global NSFW_DETECTOR
-    if NSFW_DETECTOR is None:
-        NSFW_DETECTOR = get_nsfw_detector(model_path=path, device=device)
-
 def unload_models():
-    global FACE_SWAPPER, FACE_PARSER, NSFW_DETECTOR
+    global FACE_SWAPPER, FACE_PARSER
     FACE_SWAPPER = None
     FACE_PARSER = None
-    NSFW_DETECTOR = None
-    yield "INFO: Models unloaded."
+    yield "Models unloaded."
     return
 
 ## _______________________________________________ MAIN PROCESS _______________________________________________
@@ -187,9 +179,6 @@ def process(
 
 ## _______________________________________________ PREPARE INPUTS & LOAD MODELS _______________________________________________
 
-    yield "⌛ Loading NSFW detector model...", *ui_before()
-    load_nsfw_detector_model()
-    
     yield "⌛ Loading face analyser model...", *ui_before()
     load_face_analyser_model()
 
@@ -216,15 +205,6 @@ def process(
 ## _______________________________________________ ANALYSE & SWAP FUNC _______________________________________________
 
     def swap_process(image_sequence):
-        yield "⌛ Checking contents...", *ui_before()
-        nsfw = NSFW_DETECTOR.is_nsfw(image_sequence)
-        if nsfw:
-            message = "NSFW Content detected !!!"
-            yield f"🔞 {message}", *ui_before()
-            assert not nsfw, message
-            return False
-        EMPTY_CACHE()
-
         yield "⌛ Analysing face data...", *ui_before()
         if condition != "Specific Face":
             source_data = source_path, age
@@ -598,7 +578,7 @@ with gr.Blocks(css=css) as interface:
     with gr.Row():
         with gr.Row():
             with gr.Column(scale=0.4):
-                with gr.Tab("↔️ Swap"):
+                with gr.Tab("💫 Swap"):
                     swap_option = gr.Dropdown(swap_options_list, label="Face to swap", multiselect=False, show_label=True, value=swap_options_list[0], interactive=True)
                     age = gr.Number(value=25, label="Age", info="Im not sure if this work", interactive=True, visible=False)
                 with gr.Tab("🔍 Detection"):
@@ -721,6 +701,7 @@ with gr.Blocks(css=css) as interface:
                         gr.Markdown("### [👨‍💻 Source code](https://github.com/harisreedhar/Swap-Mukham)")
                         gr.Markdown("### [⚠️ Disclaimer](https://github.com/harisreedhar/Swap-Mukham#disclaimer)")
 
+
 ## _______________________________________________ GRADIO EVENTS _______________________________________________
 
     unload_models_button.click(unload_models, outputs=[info2], show_progress=True,)
@@ -827,7 +808,7 @@ with gr.Blocks(css=css) as interface:
         show_progress=True,
     )
     output_directory_button.click(
-        lambda: open_directory(path=WORKSPACE), inputs=None, outputs=None
+        lambda: open_directory(path=outputs_dir), inputs=None, outputs=None
     )
     output_video_button.click(
         lambda: open_directory(path=OUTPUT_FILE), inputs=None, outputs=None
