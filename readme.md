@@ -6,6 +6,11 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 
 Enhanced User Experience: We've made significant improvements to the download functionality on our platform! With the addition of a new download button, progress tracker, and informative status updates, you can now enjoy the convenience of automatically downloading all models seamlessly, except for the "[79999_iter.pth]" download, which requires a different process. To optimize memory usage and create a safer environment, we have responsibly removed the NSFW (Not Safe for Work) section. Please be mindful of the content you access, as it's now the users' responsibility to ensure a safe browsing experience.
 
+## Changelog
+- Now it does not load the models at start.
+- Added Download Models button
+- Added Unload Models button to free memory.
+
 ## Features
 - Easy to use Gradio gui
 - Support Image, Video, Directory inputs
