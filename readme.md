@@ -8,8 +8,10 @@ Enhanced User Experience: We've made significant improvements to the download fu
 
 ## Changelog
 - Now it does not load the models at start.
-- Added Download Models button
+- Added Download Models button.
 - Added Unload Models button to free memory.
+- Removed NSFW filter to use less memory. Be responsible.
+- A few UI changes.
 
 ## Features
 - Easy to use Gradio gui
