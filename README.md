@@ -1,6 +1,10 @@
 ## Description
 
-A simple face swapper based on insightface inswapper heavily inspired by roop.
+A simple face swapper adapted to Automatic1111 [harisreedhar](from https://github.com/harisreedhar/Swap-Mukham) and based on insightface inswapper heavily inspired by roop.
+
+## Notes:
+
+Enhanced User Experience: We've made significant improvements to the download functionality on our platform! With the addition of a new download button, progress tracker, and informative status updates, you can now enjoy the convenience of automatically downloading all models seamlessly, except for the "[79999_iter.pth]" download, which requires a different process. To optimize memory usage and create a safer environment, we have responsibly removed the NSFW (Not Safe for Work) section. Please be mindful of the content you access, as it's now the users' responsibility to ensure a safe browsing experience.
 
 ## Features
 - Easy to use Gradio gui
@@ -12,21 +16,14 @@ A simple face swapper based on insightface inswapper heavily inspired by roop.
 - colab support
 
 ### Comparison
-
 ![10](https://github.com/rauldlnx10/sd-webui-swap-mukham/blob/main/working.png?raw=true)
-
 
 ## Installation
 ### CPU Install
 
 ## Download Models
-- [inswapper_128.onnx](https://huggingface.co/deepinsight/inswapper/resolve/main/inswapper_128.onnx)
-- [GFPGANv1.4.pth](https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth)
 - [79999_iter.pth](https://drive.google.com/open?id=154JgKpzCPW82qINcVieuPH3fZ2e0P812)
-- [RealESRGAN_x2.pth](https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth)
-- [RealESRGAN_x4.pth](https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth)
-- [RealESRGAN_x8.pth](https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x8.pth)
-- [nsfwmodel_281.pth](https://github.com/Whiax/NSFW-Classifier/raw/main/nsfwmodel_281.pth)
+
 - place these models inside ``/assets/pretrained_models/``
 
 ## Disclaimer
