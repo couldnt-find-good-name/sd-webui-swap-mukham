@@ -73,3 +73,9 @@ Remember, technology should be used to empower and inspire, not to harm or decei
 - [Face Parsing](https://github.com/zllrunning/face-parsing.PyTorch)
 - [Real-ESRGAN (ai-forever)](https://github.com/ai-forever/Real-ESRGAN)
 - [NSFW-Classifier](https://github.com/Whiax/NSFW-Classifier)
+
+## Donations
+<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="rauldlnx10p" data-color="#5F7FFF" data-emoji="" data-font="Poppins" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#ffffff" data-coffee-color="#FFDD00" ></script>
+
+
+
