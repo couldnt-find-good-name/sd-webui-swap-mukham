@@ -20,25 +20,7 @@ https://github.com/harisreedhar/Swap-Mukham/assets/46858047/d8f2389a-3078-43a1-9
 
 ## Installation
 ### CPU Install
-````
-git clone https://github.com/harisreedhar/Swap-Mukham
-cd Swap-Mukham
-conda create -n swapmukham python=3.10 -y
-conda activate swapmukham
-pip install torch==2.0.0+cpu torchvision==0.15.1+cpu torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cpu
-pip install -r requirements_cpu.txt
-python app.py
-````
-### GPU Install (CUDA)
-````
-git clone https://github.com/harisreedhar/Swap-Mukham
-cd Swap-Mukham
-conda create -n swapmukham python=3.10 -y
-conda activate swapmukham
-conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.8 -c pytorch -c nvidia
-pip install -r requirements.txt
-python app.py --cuda --batch_size 32
-````
+
 ## Download Models
 - [inswapper_128.onnx](https://huggingface.co/deepinsight/inswapper/resolve/main/inswapper_128.onnx)
 - [GFPGANv1.4.pth](https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth)
