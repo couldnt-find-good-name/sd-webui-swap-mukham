@@ -2,7 +2,7 @@
 
 A simple face swapper adapted to Automatic1111 from [harisreedhar](https://github.com/harisreedhar/Swap-Mukham) work, and based on insightface inswapper heavily inspired by roop.
 
-## Changelog
+## Changes
 - Now it does not load the models at start.
 - Added Download Models button.
 - Added Unload Models button to free memory.
