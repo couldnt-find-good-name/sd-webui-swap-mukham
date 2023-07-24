@@ -569,6 +569,7 @@ urls = [
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth",
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x8.pth",
     "https://github.com/Whiax/NSFW-Classifier/raw/main/nsfwmodel_281.pth",
+    "https://github.com/zllrunning/face-makeup.PyTorch/raw/master/cp/79999_iter.pth",
 ]   
             
 css = """
@@ -672,28 +673,6 @@ with gr.Blocks(css=css) as interface:
                         button_models_download = gr.Button(value="🔽 Download Models", label="Download Models")
                         unload_models_button = gr.Button(value="🤖 Unload Models", label="Unload Models")
 
-                    with gr.Row():
-                        gr.HTML("""
-                        <br>
-                        <p><span class="red-text"><b>⚠️ ATENTION!!!</b></span> 79999_iter.pth must be downloaded manually, then copy it in sd-webui-swap-mukham/assets/pretrained_models  
-                        <a href="https://drive.google.com/file/d/154JgKpzCPW82qINcVieuPH3fZ2e0P812/view" class="download-link">Download 79999_iter.pth</a>
-                        </p>
-                        <style>
-                            .red-text {
-                              color: red;
-                            }
-                            .download-link {
-                                text-decoration: none;
-                                color: #000;
-                                background-color: #f0f0f0;
-                                padding: 2px 4px;
-                                border-radius: 4px;
-                            }
-                            .download-link:hover {
-                                background-color: #ddd;
-                            }
-                        </style>
-                        """)
                 with gr.Box():
                     with gr.Row():
                         gr.Markdown("### [🧩 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)")
