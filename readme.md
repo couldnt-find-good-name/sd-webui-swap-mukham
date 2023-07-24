@@ -18,7 +18,7 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 - Face parsing mask
 - colab support
 
-### Comparison
+### Screenshot
 ![10](https://github.com/rauldlnx10/sd-webui-swap-mukham/blob/main/working.png?raw=true)
 
 ## Installation
