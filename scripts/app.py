@@ -675,7 +675,7 @@ with gr.Blocks(css=css) as interface:
                 with gr.Box():
                     with gr.Row():
                         gr.Markdown("### [🧩 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)")
-                        gr.Markdown("### [👨‍💻 Source code](https://github.com/harisreedhar/Swap-Mukham)")
+                        gr.Markdown("### [👨‍💻 Swap-Mukham Github](https://github.com/harisreedhar/Swap-Mukham)")
                         gr.Markdown("### [☕ Buy me a Coffee](https://www.buymeacoffee.com/rauldlnx10p)")
 
 
