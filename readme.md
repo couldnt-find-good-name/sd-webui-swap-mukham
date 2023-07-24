@@ -25,7 +25,8 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 
 - Go to Extensions - Install from URL, paste ``https://github.com/rauldlnx10/sd-webui-swap-mukham.git`` and hit Install.
   
-## Download Models
+## Download Models (Only fi it does not install automatically)
+
 - [79999_iter.pth](https://drive.google.com/open?id=154JgKpzCPW82qINcVieuPH3fZ2e0P812)
 
 - place these models inside ``/assets/pretrained_models/``
