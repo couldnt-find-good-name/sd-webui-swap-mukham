@@ -668,10 +668,9 @@ with gr.Blocks(css=css) as interface:
                 with gr.Row():
                     output_directory_button = gr.Button("📂 Open Result Folder", interactive=True)
                     output_video_button = gr.Button("🎬 Open Video", interactive=True)
-                with gr.Box():
-                    with gr.Row():
-                        button_models_download = gr.Button(value="🔽 Download Models", label="Download Models")
-                        unload_models_button = gr.Button(value="🤖 Unload Models", label="Unload Models")
+                with gr.Row():
+                    button_models_download = gr.Button(value="🔽 Download Models", label="Download Models")
+                    unload_models_button = gr.Button(value="🤖 Unload Models", label="Unload Models")
 
                 with gr.Box():
                     with gr.Row():
