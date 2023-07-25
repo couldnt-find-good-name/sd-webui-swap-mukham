@@ -27,21 +27,8 @@ from modules import script_callbacks
 
 base_dir = scripts.basedir()
 models_dir = os.path.join(base_dir, "assets", "pretrained_models")
-
-def read_output_path_from_file(file_path):
-    with open(file_path, "r") as file:
-        return file.read().strip()
-
-def write_output_path_to_file(file_path, new_path):
-    with open(file_path, "w") as file:
-        file.write(new_path)
-        print(f"New output folder set to: {new_path}")
-        yield f"📁 New output folder changed to: {new_path}"
-
-output_path_file = os.path.join(base_dir, "settings.txt")
-DEF_OUTPUT_PATH = read_output_path_from_file(output_path_file)
-
-
+root_path = os.getcwd()
+DEF_OUTPUT_PATH = os.path.join(root_path, "Outputs", "swap-mukham")
 
 USE_CUDA = True
 BATCH_SIZE = 32
@@ -595,6 +582,7 @@ css = """
 footer{display:none !important}
 """
 
+
 def refresh_output_folder():
     return DEF_OUTPUT_PATH
 
@@ -605,18 +593,18 @@ with gr.Blocks(css=css) as interface:
                 with gr.Tab("💫 Swap"):
                     swap_option = gr.Dropdown(swap_options_list, label="Face to swap", multiselect=False, show_label=True, value=swap_options_list[0], interactive=True)
                     age = gr.Number(value=25, label="Age", info="Im not sure if this work", interactive=True, visible=False)
+                    face_enhancer_name = gr.Dropdown(FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False,interactive=True)
                 with gr.Tab("🔍 Detection"):
                     detect_condition_dropdown = gr.Dropdown( detect_conditions, label="Condition", value=DETECT_CONDITION, interactive=True, info="This condition is only used when multiple faces are detected on source or specific image.")
                     detection_size = gr.Number(label="Detection Size", value=DETECT_SIZE, interactive=True)
                     detection_threshold = gr.Number(label="Detection Threshold", value=DETECT_THRESH, interactive=True)
                     apply_detection_settings = gr.Button("Apply settings", variant="primary")
 
-                with gr.Tab("📤 Output"):
-                    output_directory = gr.Text(value="", label="Output Directory",  interactive=True)
+                    output_directory = gr.Text(value="", label="Output Directory",  interactive=True, visible=False)
                     output_name = gr.Text(label="Output Name", value="Output_file", interactive=True, visible=False)
-                    save_settings_btn = gr.Button(value="Refresh")
+                    save_settings_btn = gr.Button(value="Refresh", visible=False)
                     save_settings_btn.click(fn=refresh_output_folder, inputs=None, outputs=output_directory)
-                    keep_output_sequence = gr.Checkbox(value=False, label="Keep output sequence", interactive=True)
+                    
 
                 with gr.Tab("🪄 Others"):
                     with gr.Accordion("Advanced Mask", open=False):
@@ -636,11 +624,12 @@ with gr.Blocks(css=css) as interface:
                         crop_right = gr.Number(label="Right", value=0, minimum=0, interactive=True)
 
                     enable_laplacian_blend = gr.Checkbox(label="Laplacian Blending", value=True, interactive=True)
+                    keep_output_sequence = gr.Checkbox(value=False, label="Keep output sequence", interactive=True)
 
-                    face_enhancer_name = gr.Dropdown(FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False,interactive=True)
+                    
 
                 source_image_input = gr.Image(label="Input face", type="filepath", interactive=True)
-
+                source_image_input.change(fn=refresh_output_folder, inputs=None, outputs=output_directory)
                 with gr.Box(visible=False) as specific_face:
                     for i in range(NUM_OF_SRC_SPECIFIC):
                         idx = i + 1
@@ -658,12 +647,13 @@ with gr.Blocks(css=css) as interface:
 
                     with gr.Box(visible=False) as input_image_group:
                         image_input = gr.Image(label="Target Image", interactive=True, type="filepath")
-
+                        image_input.change(fn=refresh_output_folder, inputs=None, outputs=output_directory)
                     with gr.Box(visible=True) as input_video_group:
                         vid_widget = gr.Video
                         video_input = vid_widget(
                             label="Target Video Path", interactive=True
                         )
+                        video_input.change(fn=refresh_output_folder, inputs=None, outputs=output_directory)
                         with gr.Accordion("✂️ Trim video", open=False):
                             with gr.Column():
                                 with gr.Row():
@@ -677,7 +667,7 @@ with gr.Blocks(css=css) as interface:
 
                     with gr.Box(visible=False) as input_directory_group:
                         direc_input = gr.Text(label="Path", interactive=True)
-
+                        direc_input.change(fn=refresh_output_folder, inputs=None, outputs=output_directory)
             with gr.Column(scale=0.6):
                 info = gr.HTML(value="")
                 with gr.Row():
@@ -689,7 +679,6 @@ with gr.Blocks(css=css) as interface:
 
                 with gr.Row():
                     info2 = gr.HTML(value="")
-                    output_directory.change(fn=lambda x: write_output_path_to_file(output_path_file, x), inputs=[output_directory], outputs=info2)
                 with gr.Row():
                     output_directory_button = gr.Button("📂 Open Result Folder", interactive=True)
                     output_video_button = gr.Button("🎬 Open Video", interactive=True)
