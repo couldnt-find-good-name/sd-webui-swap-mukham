@@ -482,7 +482,6 @@ def slider_changed(show_frame, video_path, frame_index):
     clip = VideoFileClip(video_path)
     frame = clip.get_frame(frame_index / clip.fps)
     frame_array = np.array(frame)
-    clip.close()
     return gr.Image.update(value=frame_array, visible=True), gr.Video.update(
         visible=False
     )
@@ -497,6 +496,7 @@ def trim_and_reload(video_path, output_path, output_name, start_frame, stop_fram
     except Exception as e:
         print(e)
         yield video_path, "❌ Video trimming failed. See console for more info."
+
 
 
 ## _______________________________________________ GRADIO GUI _______________________________________________
@@ -529,8 +529,6 @@ def on_button_click():
     if num_downloaded == num_urls:
         yield "✅ Download Completed."
     time.sleep(7)
-    yield "📜 Now you can use the tool. Congratulations."
-    time.sleep(5)
     yield ""
 
 def download_models(models_download_dir, url):
