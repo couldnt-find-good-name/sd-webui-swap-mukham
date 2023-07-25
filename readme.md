@@ -3,7 +3,7 @@
 1st of all, Im not a programmer, ChatGPT helped a lot.
 
 A simple face swapper adapted to Automatic1111 from [harisreedhar](https://github.com/harisreedhar/Swap-Mukham) work, and based on insightface inswapper heavily inspired by roop.
-#### Important
+# Important
 
 - Once you install you must go to the extension folder and edit settings.txt and add a output folder ex: C:/Ouptuts, dont worry if in the output settings appear the default folder will use the settings.txt one.
   
