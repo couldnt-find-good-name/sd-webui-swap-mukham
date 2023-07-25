@@ -357,12 +357,13 @@ def process(
 
     elif input_type == "Directory":
         extensions = ["jpg", "jpeg", "png", "bmp", "tiff", "ico", "webp"]
-        temp_path = os.path.join(output_path, output_name)
+        timestamp = int(time.time())  # Generar un número único basado en el tiempo actual
+        temp_path = os.path.join(output_path, f"{output_name}_{timestamp}")
         if os.path.exists(temp_path):
             shutil.rmtree(temp_path)
         os.mkdir(temp_path)
 
-        file_paths =[]
+        file_paths = []
         for file_path in glob.glob(os.path.join(directory_path, "*")):
             if any(file_path.lower().endswith(ext) for ext in extensions):
                 img = cv2.imread(file_path)
@@ -383,7 +384,6 @@ def process(
 
     elif input_type == "Stream":
         pass
-
 
 ## _______________________________________________ GRADIO FUNC _______________________________________________
 
