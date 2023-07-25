@@ -1,5 +1,7 @@
 ## Description
 
+1st of all, Im not a programmer, ChatGPT helped a lot.
+
 A simple face swapper adapted to Automatic1111 from [harisreedhar](https://github.com/harisreedhar/Swap-Mukham) work, and based on insightface inswapper heavily inspired by roop.
 
 ## Changes
