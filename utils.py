@@ -13,7 +13,6 @@ from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
 quality_types = ["poor", "low", "medium", "high", "best"]
 
-
 bitrate_quality_by_resolution = {
     240: {"poor": "300k", "low": "500k", "medium": "800k", "high": "1000k", "best": "1200k"},
     360: {"poor": "500k","low": "800k","medium": "1200k","high": "1500k","best": "2000k"},
@@ -183,8 +182,8 @@ def merge_img_sequence_from_ref(ref_video_path, image_sequence, output_file_name
     edited_video_clip.set_duration(duration).write_videofile(
         output_file_name, codec="libx264", bitrate=bitrate,
     )
- #  edited_video_clip.close()
-    video_clip.close()
+    edited_video_clip.close()
+    video_clip.close() # Maybe not needed.
 
 
 def scale_bbox_from_center(bbox, scale_width, scale_height, image_width, image_height):
