@@ -24,11 +24,22 @@ from utils import trim_video, StreamerThread, ProcessBar, open_directory, split_
 import modules.scripts as scripts
 from modules import script_callbacks
 
-## _______________________________________________ USER ARGS _______________________________________________
 
 base_dir = scripts.basedir()
 models_dir = os.path.join(base_dir, "assets", "pretrained_models")
-outputs_dir = os.path.join(base_dir, "Result")
+
+def read_output_path_from_file(file_path):
+    with open(file_path, "r") as file:
+        return file.read().strip()
+
+def write_output_path_to_file(file_path, new_path):
+    with open(file_path, "w") as file:
+        file.write(new_path)
+        print(f"New output folder set to: {new_path}")
+        yield f"📁 New output folder changed to: {new_path}"
+
+output_path_file = os.path.join(base_dir, "settings.txt")
+DEF_OUTPUT_PATH = read_output_path_from_file(output_path_file)
 
 
 
@@ -583,6 +594,10 @@ urls = [
 css = """
 footer{display:none !important}
 """
+
+def refresh_output_folder():
+    return DEF_OUTPUT_PATH
+
 with gr.Blocks(css=css) as interface:
     with gr.Row():
         with gr.Row():
@@ -597,8 +612,10 @@ with gr.Blocks(css=css) as interface:
                     apply_detection_settings = gr.Button("Apply settings", variant="primary")
 
                 with gr.Tab("📤 Output"):
-                    output_directory = gr.Text(value=outputs_dir, label="Output Directory",  interactive=True)
-                    output_name = gr.Text(label="Output Name", value="Image", interactive=True)
+                    output_directory = gr.Text(value="", label="Output Directory",  interactive=True)
+                    output_name = gr.Text(label="Output Name", value="Output_file", interactive=True, visible=False)
+                    save_settings_btn = gr.Button(value="Refresh")
+                    save_settings_btn.click(fn=refresh_output_folder, inputs=None, outputs=output_directory)
                     keep_output_sequence = gr.Checkbox(value=False, label="Keep output sequence", interactive=True)
 
                 with gr.Tab("🪄 Others"):
@@ -663,7 +680,6 @@ with gr.Blocks(css=css) as interface:
 
             with gr.Column(scale=0.6):
                 info = gr.HTML(value="")
-
                 with gr.Row():
                     swap_button = gr.Button("✨ Swap", variant="primary")
                     cancel_button = gr.Button("⛔ Cancel", variant="stop")
@@ -673,6 +689,7 @@ with gr.Blocks(css=css) as interface:
 
                 with gr.Row():
                     info2 = gr.HTML(value="")
+                    output_directory.change(fn=lambda x: write_output_path_to_file(output_path_file, x), inputs=[output_directory], outputs=info2)
                 with gr.Row():
                     output_directory_button = gr.Button("📂 Open Result Folder", interactive=True)
                     output_video_button = gr.Button("🎬 Open Video", interactive=True)
@@ -793,7 +810,7 @@ with gr.Blocks(css=css) as interface:
         show_progress=True,
     )
     output_directory_button.click(
-        lambda: open_directory(path=outputs_dir), inputs=None, outputs=None
+        lambda: open_directory(path=DEF_OUTPUT_PATH), inputs=None, outputs=None
     )
     output_video_button.click(
         lambda: open_directory(path=OUTPUT_FILE), inputs=None, outputs=None
