@@ -183,7 +183,7 @@ def merge_img_sequence_from_ref(ref_video_path, image_sequence, output_file_name
     edited_video_clip.set_duration(duration).write_videofile(
         output_file_name, codec="libx264", bitrate=bitrate,
     )
-    edited_video_clip.close()
+ #  edited_video_clip.close()
     video_clip.close()
 
 
