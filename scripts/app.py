@@ -335,7 +335,7 @@ def process(
             image_sequence.append(frame_path)
             curr_idx += 1
         cap.release()
-        cv2.destroyAllWindows()
+      # cv2.destroyAllWindows()
 
         for info_update in swap_process(image_sequence):
             yield info_update
