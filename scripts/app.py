@@ -295,7 +295,13 @@ def process(
 
     if input_type == "Image":
         target = cv2.imread(image_path)
-        output_file = os.path.join(output_path, output_name + ".png")
+        
+        # Generar un número único basado en el tiempo actual
+        timestamp = int(time.time())  # Esto obtiene el tiempo actual en segundos desde el Epoch.
+        
+        # Crear un nombre de archivo único usando el nombre original y el timestamp
+        output_file = os.path.join(output_path, f"{output_name}_{timestamp}.png")
+        
         cv2.imwrite(output_file, target)
 
         for info_update in swap_process([output_file]):
@@ -307,10 +313,13 @@ def process(
 
         yield get_finsh_text(start_time), *ui_after()
 
+
 ## _______________________________________________ VIDEO _______________________________________________
 
-    elif input_type == "Video":
-        temp_path = os.path.join(output_path, output_name, "sequence")
+    if input_type == "Video":
+        timestamp = int(time.time())  # Generar un número único basado en el tiempo actual
+        
+        temp_path = os.path.join(output_path, f"{output_name}_{timestamp}", "sequence")
         os.makedirs(temp_path, exist_ok=True)
 
         yield "⌛ Extracting video frames...", *ui_before()
@@ -319,7 +328,8 @@ def process(
         curr_idx = 0
         while True:
             ret, frame = cap.read()
-            if not ret:break
+            if not ret:
+                break
             frame_path = os.path.join(temp_path, f"frame_{curr_idx}.jpg")
             cv2.imwrite(frame_path, frame)
             image_sequence.append(frame_path)
@@ -331,7 +341,7 @@ def process(
             yield info_update
 
         yield "⌛ Merging sequence...", *ui_before()
-        output_video_path = os.path.join(output_path, output_name + ".mp4")
+        output_video_path = os.path.join(output_path, f"{output_name}_{timestamp}.mp4")
         merge_img_sequence_from_ref(video_path, image_sequence, output_video_path)
 
         if os.path.exists(temp_path) and not keep_output_sequence:
