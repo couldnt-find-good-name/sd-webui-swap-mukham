@@ -23,7 +23,7 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 
 ## Installation
 
-- Go to Extensions - Install from URL, paste ``https://github.com/rauldlnx10/sd-webui-swap-mukham.git`` and hit Install.
+- Go to Automatic1111 Extensions Tab - Install from URL, paste ``https://github.com/rauldlnx10/sd-webui-swap-mukham.git`` and hit Install.
   
 ## Download Models (Only if it does not install automatically)
 
