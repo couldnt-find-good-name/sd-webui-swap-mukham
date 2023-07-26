@@ -584,7 +584,7 @@ footer{display:none !important}
 
 
 def refresh_output_folder():
-    return DEF_OUTPUT_PATH
+    pass
 
 with gr.Blocks(css=css) as interface:
     with gr.Row():
@@ -600,7 +600,7 @@ with gr.Blocks(css=css) as interface:
                     detection_threshold = gr.Number(label="Detection Threshold", value=DETECT_THRESH, interactive=True)
                     apply_detection_settings = gr.Button("Apply settings", variant="primary")
 
-                    output_directory = gr.Text(value="", label="Output Directory",  interactive=True, visible=False)
+                    output_directory = gr.Text(value=DEF_OUTPUT_PATH, label="Output Directory",  interactive=True, visible=False)
                     output_name = gr.Text(label="Output Name", value="Output_file", interactive=True, visible=False)
                     save_settings_btn = gr.Button(value="Refresh", visible=False)
                     save_settings_btn.click(fn=refresh_output_folder, inputs=None, outputs=output_directory)
