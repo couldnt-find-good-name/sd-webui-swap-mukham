@@ -83,7 +83,6 @@ EMPTY_CACHE = lambda: torch.cuda.empty_cache() if device == "cuda" else None
 
 ## _______________________________________________ LOAD MODELS _______________________________________________
 
-base_dir = scripts.basedir()
 models_dir = os.path.join(base_dir, "assets", "pretrained_models")
 
 def load_face_analyser_model(name="buffalo_l"):
