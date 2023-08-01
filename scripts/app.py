@@ -24,11 +24,12 @@ from utils import trim_video, StreamerThread, ProcessBar, open_directory, split_
 import modules.scripts as scripts
 from modules import script_callbacks
 
+## _______________________________________________ USER ARGS _______________________________________________
 
 base_dir = scripts.basedir()
 models_dir = os.path.join(base_dir, "assets", "pretrained_models")
 root_path = os.getcwd()
-DEF_OUTPUT_PATH = os.path.join(root_path, "Outputs", "swap-mukham")
+outputs_dir = os.path.join(root_path, "Outputs", "swap-mukham")
 
 USE_CUDA = True
 BATCH_SIZE = 32
@@ -83,6 +84,7 @@ EMPTY_CACHE = lambda: torch.cuda.empty_cache() if device == "cuda" else None
 
 ## _______________________________________________ LOAD MODELS _______________________________________________
 
+base_dir = scripts.basedir()
 models_dir = os.path.join(base_dir, "assets", "pretrained_models")
 
 def load_face_analyser_model(name="buffalo_l"):
@@ -292,13 +294,7 @@ def process(
 
     if input_type == "Image":
         target = cv2.imread(image_path)
-        
-        # Generar un número único basado en el tiempo actual
-        timestamp = int(time.time())  # Esto obtiene el tiempo actual en segundos desde el Epoch.
-        
-        # Crear un nombre de archivo único usando el nombre original y el timestamp
-        output_file = os.path.join(output_path, f"{output_name}_{timestamp}.png")
-        
+        output_file = os.path.join(output_path, output_name + ".png")
         cv2.imwrite(output_file, target)
 
         for info_update in swap_process([output_file]):
@@ -310,13 +306,10 @@ def process(
 
         yield get_finsh_text(start_time), *ui_after()
 
-
 ## _______________________________________________ VIDEO _______________________________________________
 
-    if input_type == "Video":
-        timestamp = int(time.time())  # Generar un número único basado en el tiempo actual
-        
-        temp_path = os.path.join(output_path, f"{output_name}_{timestamp}", "sequence")
+    elif input_type == "Video":
+        temp_path = os.path.join(output_path, output_name, "sequence")
         os.makedirs(temp_path, exist_ok=True)
 
         yield "⌛ Extracting video frames...", *ui_before()
@@ -325,20 +318,19 @@ def process(
         curr_idx = 0
         while True:
             ret, frame = cap.read()
-            if not ret:
-                break
+            if not ret:break
             frame_path = os.path.join(temp_path, f"frame_{curr_idx}.jpg")
             cv2.imwrite(frame_path, frame)
             image_sequence.append(frame_path)
             curr_idx += 1
         cap.release()
-      # cv2.destroyAllWindows()
+        cv2.destroyAllWindows()
 
         for info_update in swap_process(image_sequence):
             yield info_update
 
         yield "⌛ Merging sequence...", *ui_before()
-        output_video_path = os.path.join(output_path, f"{output_name}_{timestamp}.mp4")
+        output_video_path = os.path.join(output_path, output_name + ".mp4")
         merge_img_sequence_from_ref(video_path, image_sequence, output_video_path)
 
         if os.path.exists(temp_path) and not keep_output_sequence:
@@ -354,13 +346,12 @@ def process(
 
     elif input_type == "Directory":
         extensions = ["jpg", "jpeg", "png", "bmp", "tiff", "ico", "webp"]
-        timestamp = int(time.time())  # Generar un número único basado en el tiempo actual
-        temp_path = os.path.join(output_path, f"{output_name}_{timestamp}")
+        temp_path = os.path.join(output_path, output_name)
         if os.path.exists(temp_path):
             shutil.rmtree(temp_path)
         os.mkdir(temp_path)
 
-        file_paths = []
+        file_paths =[]
         for file_path in glob.glob(os.path.join(directory_path, "*")):
             if any(file_path.lower().endswith(ext) for ext in extensions):
                 img = cv2.imread(file_path)
@@ -381,6 +372,7 @@ def process(
 
     elif input_type == "Stream":
         pass
+
 
 ## _______________________________________________ GRADIO FUNC _______________________________________________
 
@@ -489,6 +481,7 @@ def slider_changed(show_frame, video_path, frame_index):
     clip = VideoFileClip(video_path)
     frame = clip.get_frame(frame_index / clip.fps)
     frame_array = np.array(frame)
+    clip.close()
     return gr.Image.update(value=frame_array, visible=True), gr.Video.update(
         visible=False
     )
@@ -503,7 +496,6 @@ def trim_and_reload(video_path, output_path, output_name, start_frame, stop_fram
     except Exception as e:
         print(e)
         yield video_path, "❌ Video trimming failed. See console for more info."
-
 
 
 ## _______________________________________________ GRADIO GUI _______________________________________________
@@ -536,6 +528,8 @@ def on_button_click():
     if num_downloaded == num_urls:
         yield "✅ Download Completed."
     time.sleep(7)
+    yield "📜 Now you can use the tool. Congratulations."
+    time.sleep(5)
     yield ""
 
 def download_models(models_download_dir, url):
@@ -574,17 +568,11 @@ urls = [
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth",
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x8.pth",
     "https://github.com/Whiax/NSFW-Classifier/raw/main/nsfwmodel_281.pth",
-    "https://github.com/zllrunning/face-makeup.PyTorch/raw/master/cp/79999_iter.pth",
 ]   
             
 css = """
 footer{display:none !important}
 """
-
-
-def refresh_output_folder():
-    pass
-
 with gr.Blocks(css=css) as interface:
     with gr.Row():
         with gr.Row():
@@ -592,18 +580,16 @@ with gr.Blocks(css=css) as interface:
                 with gr.Tab("💫 Swap"):
                     swap_option = gr.Dropdown(swap_options_list, label="Face to swap", multiselect=False, show_label=True, value=swap_options_list[0], interactive=True)
                     age = gr.Number(value=25, label="Age", info="Im not sure if this work", interactive=True, visible=False)
-                    face_enhancer_name = gr.Dropdown(FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False,interactive=True)
                 with gr.Tab("🔍 Detection"):
                     detect_condition_dropdown = gr.Dropdown( detect_conditions, label="Condition", value=DETECT_CONDITION, interactive=True, info="This condition is only used when multiple faces are detected on source or specific image.")
                     detection_size = gr.Number(label="Detection Size", value=DETECT_SIZE, interactive=True)
                     detection_threshold = gr.Number(label="Detection Threshold", value=DETECT_THRESH, interactive=True)
                     apply_detection_settings = gr.Button("Apply settings", variant="primary")
 
-                    output_directory = gr.Text(value=DEF_OUTPUT_PATH, label="Output Directory",  interactive=True, visible=False)
-                    output_name = gr.Text(label="Output Name", value="Output_file", interactive=True, visible=False)
-                    save_settings_btn = gr.Button(value="Refresh", visible=False)
-                    save_settings_btn.click(fn=refresh_output_folder, inputs=None, outputs=output_directory)
-                    
+                with gr.Tab("📤 Output"):
+                    output_directory = gr.Text(value=outputs_dir, label="Output Directory",  interactive=True)
+                    output_name = gr.Text(label="Output Name", value="Image", interactive=True)
+                    keep_output_sequence = gr.Checkbox(value=False, label="Keep output sequence", interactive=True)
 
                 with gr.Tab("🪄 Others"):
                     with gr.Accordion("Advanced Mask", open=False):
@@ -623,12 +609,11 @@ with gr.Blocks(css=css) as interface:
                         crop_right = gr.Number(label="Right", value=0, minimum=0, interactive=True)
 
                     enable_laplacian_blend = gr.Checkbox(label="Laplacian Blending", value=True, interactive=True)
-                    keep_output_sequence = gr.Checkbox(value=False, label="Keep output sequence", interactive=True)
 
-                    
+                    face_enhancer_name = gr.Dropdown(FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False,interactive=True)
 
                 source_image_input = gr.Image(label="Input face", type="filepath", interactive=True)
-                source_image_input.change(fn=refresh_output_folder, inputs=None, outputs=output_directory)
+
                 with gr.Box(visible=False) as specific_face:
                     for i in range(NUM_OF_SRC_SPECIFIC):
                         idx = i + 1
@@ -646,13 +631,12 @@ with gr.Blocks(css=css) as interface:
 
                     with gr.Box(visible=False) as input_image_group:
                         image_input = gr.Image(label="Target Image", interactive=True, type="filepath")
-                        image_input.change(fn=refresh_output_folder, inputs=None, outputs=output_directory)
+
                     with gr.Box(visible=True) as input_video_group:
                         vid_widget = gr.Video
                         video_input = vid_widget(
                             label="Target Video Path", interactive=True
                         )
-                        video_input.change(fn=refresh_output_folder, inputs=None, outputs=output_directory)
                         with gr.Accordion("✂️ Trim video", open=False):
                             with gr.Column():
                                 with gr.Row():
@@ -666,9 +650,10 @@ with gr.Blocks(css=css) as interface:
 
                     with gr.Box(visible=False) as input_directory_group:
                         direc_input = gr.Text(label="Path", interactive=True)
-                        direc_input.change(fn=refresh_output_folder, inputs=None, outputs=output_directory)
+
             with gr.Column(scale=0.6):
                 info = gr.HTML(value="")
+
                 with gr.Row():
                     swap_button = gr.Button("✨ Swap", variant="primary")
                     cancel_button = gr.Button("⛔ Cancel", variant="stop")
@@ -681,14 +666,37 @@ with gr.Blocks(css=css) as interface:
                 with gr.Row():
                     output_directory_button = gr.Button("📂 Open Result Folder", interactive=True)
                     output_video_button = gr.Button("🎬 Open Video", interactive=True)
-                with gr.Row():
-                    button_models_download = gr.Button(value="🔽 Download Models", label="Download Models")
-                    unload_models_button = gr.Button(value="🤖 Unload Models", label="Unload Models")
+                with gr.Box():
+                    with gr.Row():
+                        button_models_download = gr.Button(value="🔽 Download Models", label="Download Models")
+                        unload_models_button = gr.Button(value="🤖 Unload Models", label="Unload Models")
 
+                    with gr.Row():
+                        gr.HTML("""
+                        <br>
+                        <p><span class="red-text"><b>⚠️ ATENTION!!!</b></span> 79999_iter.pth must be downloaded manually, then copy it in sd-webui-swap-mukham/assets/pretrained_models  
+                        <a href="https://drive.google.com/file/d/154JgKpzCPW82qINcVieuPH3fZ2e0P812/view" class="download-link">Download 79999_iter.pth</a>
+                        </p>
+                        <style>
+                            .red-text {
+                              color: red;
+                            }
+                            .download-link {
+                                text-decoration: none;
+                                color: #000;
+                                background-color: #f0f0f0;
+                                padding: 2px 4px;
+                                border-radius: 4px;
+                            }
+                            .download-link:hover {
+                                background-color: #ddd;
+                            }
+                        </style>
+                        """)
                 with gr.Box():
                     with gr.Row():
                         gr.Markdown("### [🧩 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)")
-                        gr.Markdown("### [👨‍💻 Swap-Mukham Github](https://github.com/harisreedhar/Swap-Mukham)")
+                        gr.Markdown("### [👨‍💻 Source code](https://github.com/harisreedhar/Swap-Mukham)")
                         gr.Markdown("### [☕ Buy me a Coffee](https://www.buymeacoffee.com/rauldlnx10p)")
 
 
@@ -798,7 +806,7 @@ with gr.Blocks(css=css) as interface:
         show_progress=True,
     )
     output_directory_button.click(
-        lambda: open_directory(path=DEF_OUTPUT_PATH), inputs=None, outputs=None
+        lambda: open_directory(path=outputs_dir), inputs=None, outputs=None
     )
     output_video_button.click(
         lambda: open_directory(path=OUTPUT_FILE), inputs=None, outputs=None
