@@ -13,7 +13,8 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 - Added Unload Models button to free memory.
 - Removed NSFW filter to use less memory. Be responsible.
 - A few UI changes.
-
+- Moved face Enhancement to Swap tab.
+  
 ## Features
 - Easy to use Gradio gui
 - Support Image, Video, Directory inputs
@@ -21,7 +22,6 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 - Video trim tool
 - Face enhancer (GFPGAN, Real-ESRGAN)
 - Face parsing mask
-- colab support
 
 ### Screenshot
 ![10](https://github.com/rauldlnx10/sd-webui-swap-mukham/blob/main/working.png?raw=true)
