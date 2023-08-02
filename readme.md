@@ -66,16 +66,16 @@ Remember, technology should be used to empower and inspire, not to harm or decei
 
 
 ## Acknowledgements
-- [Swap-Mukham](https://github.com/harisreedhar/Swap-Mukham)
-- [Automatic1111](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
-- [Roop](https://github.com/s0md3v/roop)
-- [Insightface](https://github.com/deepinsight)
-- [Ffmpeg](https://ffmpeg.org/)
-- [Gradio](https://gradio.app/)
-- [Wav2lip HQ](https://github.com/Markfryazino/wav2lip-hq)
-- [Face Parsing](https://github.com/zllrunning/face-parsing.PyTorch)
-- [Real-ESRGAN (ai-forever)](https://github.com/ai-forever/Real-ESRGAN)
-- [NSFW-Classifier](https://github.com/Whiax/NSFW-Classifier)
+[Swap-Mukham](https://github.com/harisreedhar/Swap-Mukham)
+[Automatic1111](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
+[Roop](https://github.com/s0md3v/roop)
+[Insightface](https://github.com/deepinsight)
+[Ffmpeg](https://ffmpeg.org/)
+[Gradio](https://gradio.app/)
+[Wav2lip HQ](https://github.com/Markfryazino/wav2lip-hq)
+[Face Parsing](https://github.com/zllrunning/face-parsing.PyTorch)
+[Real-ESRGAN (ai-forever)](https://github.com/ai-forever/Real-ESRGAN)
+[NSFW-Classifier](https://github.com/Whiax/NSFW-Classifier)
 
 ## Donations
 [![Buy Me a Coffee](https://bmc-cdn.nyc3.digitaloceanspaces.com/BMC-button-images/custom_images/orange_img.png)](https://www.buymeacoffee.com/rauldlnx10p)
