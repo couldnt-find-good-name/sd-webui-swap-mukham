@@ -23,6 +23,7 @@ from face_parsing import init_parser, swap_regions, mask_regions, mask_regions_t
 from utils import trim_video, StreamerThread, ProcessBar, open_directory, split_list_by_lengths, merge_img_sequence_from_ref
 import modules.scripts as scripts
 from modules import script_callbacks
+import datetime
 
 ## _______________________________________________ USER ARGS _______________________________________________
 
@@ -290,11 +291,18 @@ def process(
             crop_left,
             crop_right
         )
+        
+
+
+        
 ## _______________________________________________ IMAGE _______________________________________________
 
     if input_type == "Image":
         target = cv2.imread(image_path)
-        output_file = os.path.join(output_path, output_name + ".png")
+        # Generar el timestamp actual
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        # Agregar el timestamp al nombre del archivo de salida
+        output_file = os.path.join(output_path, f"{output_name}_{timestamp}.png")
         cv2.imwrite(output_file, target)
 
         for info_update in swap_process([output_file]):
@@ -324,13 +332,16 @@ def process(
             image_sequence.append(frame_path)
             curr_idx += 1
         cap.release()
-        cv2.destroyAllWindows()
+##       cv2.destroyAllWindows()
 
         for info_update in swap_process(image_sequence):
             yield info_update
-
+            
+        # Generar el timestamp actual para el nombre del video resultante
+        video_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        
         yield "⌛ Merging sequence...", *ui_before()
-        output_video_path = os.path.join(output_path, output_name + ".mp4")
+        output_video_path = os.path.join(output_path, f"{output_name}_{video_timestamp}.mp4")
         merge_img_sequence_from_ref(video_path, image_sequence, output_video_path)
 
         if os.path.exists(temp_path) and not keep_output_sequence:
@@ -580,6 +591,8 @@ with gr.Blocks(css=css) as interface:
                 with gr.Tab("💫 Swap"):
                     swap_option = gr.Dropdown(swap_options_list, label="Face to swap", multiselect=False, show_label=True, value=swap_options_list[0], interactive=True)
                     age = gr.Number(value=25, label="Age", info="Im not sure if this work", interactive=True, visible=False)
+                    face_enhancer_name = gr.Dropdown(FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False,interactive=True)
+
                 with gr.Tab("🔍 Detection"):
                     detect_condition_dropdown = gr.Dropdown( detect_conditions, label="Condition", value=DETECT_CONDITION, interactive=True, info="This condition is only used when multiple faces are detected on source or specific image.")
                     detection_size = gr.Number(label="Detection Size", value=DETECT_SIZE, interactive=True)
@@ -610,7 +623,6 @@ with gr.Blocks(css=css) as interface:
 
                     enable_laplacian_blend = gr.Checkbox(label="Laplacian Blending", value=True, interactive=True)
 
-                    face_enhancer_name = gr.Dropdown(FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False,interactive=True)
 
                 source_image_input = gr.Image(label="Input face", type="filepath", interactive=True)
 
@@ -669,30 +681,8 @@ with gr.Blocks(css=css) as interface:
                 with gr.Box():
                     with gr.Row():
                         button_models_download = gr.Button(value="🔽 Download Models", label="Download Models")
-                        unload_models_button = gr.Button(value="🤖 Unload Models", label="Unload Models")
+                        unload_models_button = gr.Button(value="🤖 Unload Models from GPU", label="Unload Models")
 
-                    with gr.Row():
-                        gr.HTML("""
-                        <br>
-                        <p><span class="red-text"><b>⚠️ ATENTION!!!</b></span> 79999_iter.pth must be downloaded manually, then copy it in sd-webui-swap-mukham/assets/pretrained_models  
-                        <a href="https://drive.google.com/file/d/154JgKpzCPW82qINcVieuPH3fZ2e0P812/view" class="download-link">Download 79999_iter.pth</a>
-                        </p>
-                        <style>
-                            .red-text {
-                              color: red;
-                            }
-                            .download-link {
-                                text-decoration: none;
-                                color: #000;
-                                background-color: #f0f0f0;
-                                padding: 2px 4px;
-                                border-radius: 4px;
-                            }
-                            .download-link:hover {
-                                background-color: #ddd;
-                            }
-                        </style>
-                        """)
                 with gr.Box():
                     with gr.Row():
                         gr.Markdown("### [🧩 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)")
