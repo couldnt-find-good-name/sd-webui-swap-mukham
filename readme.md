@@ -15,14 +15,6 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 - A few UI changes.
 - Moved face Enhancement to Swap tab.
   
-## Features
-- Easy to use Gradio gui
-- Support Image, Video, Directory inputs
-- Swap specific face (face recognition)
-- Video trim tool
-- Face enhancer (GFPGAN, Real-ESRGAN)
-- Face parsing mask
-
 ### Screenshot
 ![10](https://github.com/rauldlnx10/sd-webui-swap-mukham/blob/main/working.png?raw=true)
 
@@ -30,9 +22,9 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 
 - Go to Automatic1111 Extensions Tab - Install from URL, paste ``https://github.com/rauldlnx10/sd-webui-swap-mukham.git`` and hit Install.
   
-## Download Models (Only if it does not install automatically)
+## Download Models
 
-- [79999_iter.pth](https://drive.google.com/open?id=154JgKpzCPW82qINcVieuPH3fZ2e0P812)
+- Download [79999_iter.pth](https://drive.google.com/open?id=154JgKpzCPW82qINcVieuPH3fZ2e0P812) only if it does not download automatically.
 
 - place these models inside ``/assets/pretrained_models/``
 
@@ -40,10 +32,7 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 
 We would like to emphasize that our deep fake software is intended for responsible and ethical use only. We must stress that **users are solely responsible for their actions when using our software**.
 
-1. Intended Usage:
-Our deep fake software is designed to assist users in creating realistic and entertaining content, such as movies, visual effects, virtual reality experiences, and other creative applications. We encourage users to explore these possibilities within the boundaries of legality, ethical considerations, and respect for others' privacy.
-
-2. Ethical Guidelines:
+1. Ethical Guidelines:
 Users are expected to adhere to a set of ethical guidelines when using our software. These guidelines include, but are not limited to:
 
 Not creating or sharing deep fake content that could harm, defame, or harass individuals.
@@ -51,13 +40,13 @@ Obtaining proper consent and permissions from individuals featured in the conten
 Avoiding the use of deep fake technology for deceptive purposes, including misinformation or malicious intent.
 Respecting and abiding by applicable laws, regulations, and copyright restrictions.
 
-3. Privacy and Consent:
+2. Privacy and Consent:
 Users are responsible for ensuring that they have the necessary permissions and consents from individuals whose likeness they intend to use in their deep fake creations. We strongly discourage the creation of deep fake content without explicit consent, particularly if it involves non-consensual or private content. It is essential to respect the privacy and dignity of all individuals involved.
 
-4. Legal Considerations:
+3. Legal Considerations:
 Users must understand and comply with all relevant local, regional, and international laws pertaining to deep fake technology. This includes laws related to privacy, defamation, intellectual property rights, and other relevant legislation. Users should consult legal professionals if they have any doubts regarding the legal implications of their deep fake creations.
 
-5. Liability and Responsibility:
+4. Liability and Responsibility:
 We, as the creators and providers of the deep fake software, cannot be held responsible for the actions or consequences resulting from the usage of our software. Users assume full liability and responsibility for any misuse, unintended effects, or abusive behavior associated with the deep fake content they create.
 
 By using our deep fake software, users acknowledge that they have read, understood, and agreed to abide by the above guidelines and disclaimers. We strongly encourage users to approach deep fake technology with caution, integrity, and respect for the well-being and rights of others.
