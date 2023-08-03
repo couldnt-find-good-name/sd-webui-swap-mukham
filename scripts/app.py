@@ -26,11 +26,17 @@ from modules import script_callbacks
 
 ## _______________________________________________ USER ARGS _______________________________________________
 
+
 root_path = os.getcwd()
 outputs_dir = os.path.join(root_path, "Outputs", "swap-mukham")
 
+# Verificar si la carpeta existe
+if not os.path.exists(outputs_dir):
+    # Si no existe, crear la carpeta
+    os.mkdir(outputs_dir)
+    print(f"Se ha creado la carpeta {outputs_dir}")
 
-
+DEF_OUTPUT_PATH = outputs_dir
 USE_CUDA = True
 BATCH_SIZE = 32
 WORKSPACE = None
@@ -293,13 +299,21 @@ def process(
 ## _______________________________________________ IMAGE _______________________________________________
 
     if input_type == "Image":
+        global last_generated_file
         target = cv2.imread(image_path)
-        output_file = os.path.join(output_path, output_name + ".png")
+        # Obtener la fecha y hora actual
+        now = datetime.datetime.now()
+        # Formatear la fecha y hora como una cadena
+        date_str = now.strftime("%Y-%m-%d_%H-%M-%S")
+        # Usar la cadena como parte del nombre del archivo de salida
+        output_file = os.path.join(output_path, output_name + "_" + date_str + ".png")
+        last_generated_file = output_file
         cv2.imwrite(output_file, target)
 
         for info_update in swap_process([output_file]):
             yield info_update
 
+        
         OUTPUT_FILE = output_file
         WORKSPACE = output_path
         PREVIEW = cv2.imread(output_file)[:, :, ::-1]
@@ -309,6 +323,7 @@ def process(
 ## _______________________________________________ VIDEO _______________________________________________
 
     elif input_type == "Video":
+        global last_generated_video
         temp_path = os.path.join(output_path, output_name, "sequence")
         os.makedirs(temp_path, exist_ok=True)
 
@@ -324,19 +339,24 @@ def process(
             image_sequence.append(frame_path)
             curr_idx += 1
         cap.release()
-        cv2.destroyAllWindows()
+        #cv2.destroyAllWindows()
 
         for info_update in swap_process(image_sequence):
             yield info_update
 
         yield "⌛ Merging sequence...", *ui_before()
-        output_video_path = os.path.join(output_path, output_name + ".mp4")
+        # Obtener la fecha y hora actual
+        now = datetime.datetime.now()
+        # Formatear la fecha y hora como una cadena
+        date_str = now.strftime("%Y-%m-%d_%H-%M-%S")
+        # Usar la cadena como parte del nombre del archivo de salida
+        output_video_path = os.path.join(output_path, output_name + "_" + date_str + ".mp4")
         merge_img_sequence_from_ref(video_path, image_sequence, output_video_path)
 
         if os.path.exists(temp_path) and not keep_output_sequence:
             yield "⌛ Removing temporary files...", *ui_before()
             shutil.rmtree(temp_path)
-
+        last_generated_video = output_video_path
         WORKSPACE = output_path
         OUTPUT_FILE = output_video_path
 
@@ -450,7 +470,6 @@ def video_changed(video_path):
             number_update(value=1),
         )
 
-
 def analyse_settings_changed(detect_condition, detection_size, detection_threshold):
     yield "⌛ Applying new values..."
     global FACE_ANALYSER
@@ -464,14 +483,12 @@ def analyse_settings_changed(detect_condition, detection_size, detection_thresho
     )
     yield f"✔️ Applied detect condition:{detect_condition}, detection size: {detection_size}, detection threshold: {detection_threshold}"
 
-
 def stop_running():
     global STREAMER
     if hasattr(STREAMER, "stop"):
         STREAMER.stop()
         STREAMER = None
     return "Cancelled"
-
 
 def slider_changed(show_frame, video_path, frame_index):
     if not show_frame:
@@ -516,7 +533,14 @@ class Script(scripts.Script):
     def on_ui_tabs(self):
         return [(interface, "Swap", "swap")]
 
-def on_button_click():
+
+def remove_showing_image():
+    os.remove(OUTPUT_FILE)
+    yield f"🗑️ {OUTPUT_FILE} deleted..." # Aquí mostramos el nombre
+    time.sleep(5)
+    yield ""
+
+def download_models_bt():
     yield "📥 Downloading models... 🕐 Please wait..."
     models_download_dir = os.path.join(base_dir, "assets", "pretrained_models")
     num_urls = len(urls)
@@ -567,7 +591,6 @@ urls = [
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth",
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth",
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x8.pth",
-    "https://github.com/Whiax/NSFW-Classifier/raw/main/nsfwmodel_281.pth",
     "https://github.com/zllrunning/face-makeup.PyTorch/raw/master/cp/79999_iter.pth",
 ]   
             
@@ -578,21 +601,22 @@ with gr.Blocks(css=css) as interface:
     with gr.Row():
         with gr.Row():
             with gr.Column(scale=0.4):
-                with gr.Tab("💫 Swap"):
+                with gr.Tab("🌟 Swap"):
                     swap_option = gr.Dropdown(swap_options_list, label="Face to swap", multiselect=False, show_label=True, value=swap_options_list[0], interactive=True)
                     age = gr.Number(value=25, label="Age", info="Im not sure if this work", interactive=True, visible=False)
                     face_enhancer_name = gr.Dropdown(FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False,interactive=True)
-
+                    keep_output_sequence = gr.Checkbox(value=False, label="Keep Temp Sequence", interactive=True)
+                    
                 with gr.Tab("🔍 Detection"):
                     detect_condition_dropdown = gr.Dropdown( detect_conditions, label="Condition", value=DETECT_CONDITION, interactive=True, info="This condition is only used when multiple faces are detected on source or specific image.")
                     detection_size = gr.Number(label="Detection Size", value=DETECT_SIZE, interactive=True)
                     detection_threshold = gr.Number(label="Detection Threshold", value=DETECT_THRESH, interactive=True)
                     apply_detection_settings = gr.Button("Apply settings", variant="primary")
 
-                with gr.Tab("📤 Output"):
-                    output_directory = gr.Text(value=outputs_dir, label="Output Directory",  interactive=True)
-                    output_name = gr.Text(label="Output Name", value="Image", interactive=True)
-                    keep_output_sequence = gr.Checkbox(value=False, label="Keep output sequence", interactive=True)
+###               with gr.Tab("📤 Output"):
+                    output_directory = gr.Text(value=outputs_dir, label="Output Directory",  interactive=True, visible=False)
+                    output_name = gr.Text(label="Output Name", value="Image", interactive=True, visible=False)
+                    
 
                 with gr.Tab("🪄 Others"):
                     with gr.Accordion("Advanced Mask", open=False):
@@ -612,8 +636,6 @@ with gr.Blocks(css=css) as interface:
                         crop_right = gr.Number(label="Right", value=0, minimum=0, interactive=True)
 
                     enable_laplacian_blend = gr.Checkbox(label="Laplacian Blending", value=True, interactive=True)
-
-                    face_enhancer_name = gr.Dropdown(FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False,interactive=True)
 
                 source_image_input = gr.Image(label="Input face", type="filepath", interactive=True)
 
@@ -663,17 +685,19 @@ with gr.Blocks(css=css) as interface:
                     
                 preview_image = gr.Image(label="Output", interactive=False)
                 preview_video = gr.Video(label="Output", interactive=False, visible=False)
-
-                with gr.Row():
-                    info2 = gr.HTML(value="")
-                with gr.Row():
-                    output_directory_button = gr.Button("📂 Open Result Folder", interactive=True)
-                    output_video_button = gr.Button("🎬 Open Video", interactive=True)
+                with gr.Box():
+                    with gr.Row():
+                        info2 = gr.HTML(value="")
                 with gr.Box():
                     with gr.Row():
                         button_models_download = gr.Button(value="🔽 Download Models", label="Download Models")
                         unload_models_button = gr.Button(value="🤖 Unload Models", label="Unload Models")
-
+                with gr.Box():
+                    with gr.Row():
+                        output_directory_button = gr.Button("📂 Open Results", interactive=True)
+                        output_video_button = gr.Button("🎬 Play Video", interactive=True)
+                        remove_image = gr.Button("❌ Remove Image/Video", interactive=True)
+                        
                 with gr.Box():
                     with gr.Row():
                         gr.Markdown("### [🧩 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)")
@@ -683,8 +707,11 @@ with gr.Blocks(css=css) as interface:
 
 ## _______________________________________________ GRADIO EVENTS _______________________________________________
 
-    unload_models_button.click(unload_models, outputs=[info2], show_progress=True,)
-    button_models_download.click(fn=on_button_click, outputs=[info2], show_progress=True,)
+    unload_models_button.click(unload_models, outputs=info2)
+    button_models_download.click(fn=download_models_bt, outputs=info2, show_progress=True,)
+    remove_image.click(fn=remove_showing_image, outputs=info2)
+    
+    
     set_slider_range_event = set_slider_range_btn.click(
         video_changed,
         inputs=[video_input],
