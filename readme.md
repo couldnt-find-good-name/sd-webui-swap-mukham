@@ -9,9 +9,10 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
   
 ## Changes
 changes 04/08/2023
-- Added Delete Button to delete the last generation.
+- Added Delete Button to delete the last generated image or video.
 - Disabled output folder change, now default output folder is automatic1111 outputs folder/swap-mukham
 - Moved Enhancement and Keep Temp Sequence to Swap Tab.
+- Added Download Models info and progress.
 
   
 ### Screenshot
