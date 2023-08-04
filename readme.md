@@ -16,7 +16,7 @@ changes 04/08/2023
 
   
 ### Screenshot
-![10](https://github.com/rauldlnx10/sd-webui-swap-mukham/blob/main/working.png?raw=true)
+![10](https://raw.githubusercontent.com/rauldlnx10/sd-webui-swap-mukham/main/working.png)
 
 ## Installation
 
