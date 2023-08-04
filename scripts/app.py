@@ -116,7 +116,7 @@ def unload_models():
     global FACE_SWAPPER, FACE_PARSER
     FACE_SWAPPER = None
     FACE_PARSER = None
-    yield "Models unloaded."
+    yield "🤖 Models unloaded."
     return
 
 ## _______________________________________________ MAIN PROCESS _______________________________________________
@@ -535,55 +535,56 @@ class Script(scripts.Script):
 
 
 def remove_showing_image():
-    os.remove(OUTPUT_FILE)
-    yield f"🗑️ {OUTPUT_FILE} deleted..." # Aquí mostramos el nombre
+    if OUTPUT_FILE is None:
+        yield "ℹ️ Only deletes the last generation image/video"
+    else:
+        try:
+            os.remove(OUTPUT_FILE)
+            yield f"🗑️ {OUTPUT_FILE} deleted..."
+        except FileNotFoundError:
+            yield f"❌ {OUTPUT_FILE} does not exist..."
+
     time.sleep(5)
     yield ""
 
 def download_models_bt():
-    yield "📥 Downloading models... 🕐 Please wait..."
     models_download_dir = os.path.join(base_dir, "assets", "pretrained_models")
     num_urls = len(urls)
     num_downloaded = 0
     for url in urls:
-        if download_models(models_download_dir, url):
+        try:
+            response = requests.get(url, stream=True)
+            response.raise_for_status()
+            filename = os.path.basename(url)
+            file_path = os.path.join(models_download_dir, filename)
+
+            if os.path.exists(file_path):
+                yield f"ℹ️ {filename} already exists. Skipping download."
+                num_downloaded += 1
+                continue
+
+            total_size = int(response.headers.get('content-length', 0))
+            block_size = 1024*1024  # 1 KB
+            downloaded_size = 0
+
+            with open(file_path, "wb") as f:
+                for data in response.iter_content(block_size):
+                    f.write(data)
+                    downloaded_size += len(data)
+                    percentage = round(downloaded_size / total_size * 100, 1)
+                    yield f"⬇️ Downloading: {filename}: {percentage} %"
             num_downloaded += 1
 
+        except requests.exceptions.RequestException as e:
+            yield f"❌ Couldn´t download {filename}. Error: {e}"
+        except Exception as e:
+            yield f"❌ Unknown error downloading {filename}. Error: {e}"
+
     if num_downloaded == num_urls:
-        yield "✅ Download Completed."
-    time.sleep(7)
-    yield "📜 Now you can use the tool. Congratulations."
+        yield "✅ All Models downloaded."
     time.sleep(5)
     yield ""
 
-def download_models(models_download_dir, url):
-    try:
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
-        filename = os.path.basename(url)
-        file_path = os.path.join(models_download_dir, filename)
-
-        if os.path.exists(file_path):
-            print(f"{filename} already exists. Skipping download.")
-            return True
-
-        total_size = int(response.headers.get('content-length', 0))
-        block_size = 1024  # 1 KB
-
-        with open(file_path, "wb") as f, tqdm(
-                total=total_size, unit='iB', unit_scale=True,
-                desc=f"Downloading {filename}", dynamic_ncols=True) as progress_bar:
-            for data in response.iter_content(block_size):
-                f.write(data)
-                progress_bar.update(len(data))
-        return True
-
-    except requests.exceptions.RequestException as e:
-        print(f"Couldn't download {filename}. Error: {e}")
-        return False
-    except Exception as e:
-        print(f"Unknown error while downloading {filename}. Error: {e}")
-        return False
 
 urls = [
     "https://huggingface.co/deepinsight/inswapper/resolve/main/inswapper_128.onnx",
@@ -592,7 +593,9 @@ urls = [
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth",
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x8.pth",
     "https://github.com/zllrunning/face-makeup.PyTorch/raw/master/cp/79999_iter.pth",
-]   
+]
+     
+
             
 css = """
 footer{display:none !important}
@@ -616,7 +619,6 @@ with gr.Blocks(css=css) as interface:
 ###               with gr.Tab("📤 Output"):
                     output_directory = gr.Text(value=outputs_dir, label="Output Directory",  interactive=True, visible=False)
                     output_name = gr.Text(label="Output Name", value="Image", interactive=True, visible=False)
-                    
 
                 with gr.Tab("🪄 Others"):
                     with gr.Accordion("Advanced Mask", open=False):
@@ -662,7 +664,7 @@ with gr.Blocks(css=css) as interface:
                         video_input = vid_widget(
                             label="Target Video Path", interactive=True
                         )
-                        with gr.Accordion("✂️ Trim video", open=False):
+                        with gr.Accordion("✂️ Video Cut", open=False):
                             with gr.Column():
                                 with gr.Row():
                                     set_slider_range_btn = gr.Button("Set frame range", interactive=True)
@@ -671,23 +673,22 @@ with gr.Blocks(css=css) as interface:
                                 video_fps = gr.Number(value=30, interactive=False, label="Fps", visible=False)
                                 start_frame = gr.Slider(minimum=0, maximum=1, value=0, step=1, interactive=True, label="Start Frame", info="")
                                 end_frame = gr.Slider(minimum=0, maximum=1, value=1, step=1, interactive=True, label="End Frame", info="")
-                            trim_and_reload_btn = gr.Button("Trim and Reload", interactive=True)
+                            trim_and_reload_btn = gr.Button("Cut and Reload", interactive=True)
 
                     with gr.Box(visible=False) as input_directory_group:
                         direc_input = gr.Text(label="Path", interactive=True)
 
             with gr.Column(scale=0.6):
-                info = gr.HTML(value="")
-
+                with gr.Box():
+                    info = gr.HTML(value="")
+                    info2 = gr.HTML(value="")
                 with gr.Row():
                     swap_button = gr.Button("✨ Swap", variant="primary")
                     cancel_button = gr.Button("⛔ Cancel", variant="stop")
                     
                 preview_image = gr.Image(label="Output", interactive=False)
                 preview_video = gr.Video(label="Output", interactive=False, visible=False)
-                with gr.Box():
-                    with gr.Row():
-                        info2 = gr.HTML(value="")
+
                 with gr.Box():
                     with gr.Row():
                         button_models_download = gr.Button(value="🔽 Download Models", label="Download Models")
@@ -704,13 +705,11 @@ with gr.Blocks(css=css) as interface:
                         gr.Markdown("### [👨‍💻 Source code](https://github.com/harisreedhar/Swap-Mukham)")
                         gr.Markdown("### [☕ Buy me a Coffee](https://www.buymeacoffee.com/rauldlnx10p)")
 
-
 ## _______________________________________________ GRADIO EVENTS _______________________________________________
 
     unload_models_button.click(unload_models, outputs=info2)
     button_models_download.click(fn=download_models_bt, outputs=info2, show_progress=True,)
-    remove_image.click(fn=remove_showing_image, outputs=info2)
-    
+    remove_image.click(fn=remove_showing_image, outputs=[info2])
     
     set_slider_range_event = set_slider_range_btn.click(
         video_changed,
