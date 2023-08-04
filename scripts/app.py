@@ -18,9 +18,10 @@ from moviepy.editor import VideoFileClip
 import requests
 from face_swapper import Inswapper, paste_to_whole, place_foreground_on_background
 from face_analyser import detect_conditions, get_analysed_data, swap_options_list
-from face_enhancer import get_available_enhancer_names, load_face_enhancer_model
+from face_enhancer import get_available_enhancer_names, load_face_enhancer_model, cv2_interpolations
 from face_parsing import init_parser, swap_regions, mask_regions, mask_regions_to_list, SoftErosion
 from utils import trim_video, StreamerThread, ProcessBar, open_directory, split_list_by_lengths, merge_img_sequence_from_ref
+from modules import generation_parameters_copypaste as params_copypaste
 import modules.scripts as scripts
 from modules import script_callbacks
 
@@ -68,6 +69,7 @@ FACE_ENHANCER = None
 FACE_PARSER = None
 FACE_ENHANCER_LIST = ["NONE"]
 FACE_ENHANCER_LIST.extend(get_available_enhancer_names())
+FACE_ENHANCER_LIST.extend(cv2_interpolations)
 
 ## _______________________________________________ SET EXECUTION PROVIDER _______________________________________________
 
@@ -184,7 +186,7 @@ def process(
 
 ## _______________________________________________ PREPARE INPUTS & LOAD MODELS _______________________________________________
 
-    yield "⌛ Loading face analyser model...", *ui_before()
+    yield "⌛️ Loading face analyser model...", *ui_before()
     load_face_analyser_model()
 
     yield "⌛ Loading face swapper model...", *ui_before()
@@ -559,24 +561,32 @@ def download_models_bt():
             file_path = os.path.join(models_download_dir, filename)
 
             if os.path.exists(file_path):
-                yield f"ℹ️ {filename} already exists. Skipping download."
+                yield f"ℹ {filename} already exists. Skipping download."
                 num_downloaded += 1
                 continue
 
             total_size = int(response.headers.get('content-length', 0))
-            block_size = 1024*1024  # 1 KB
+            block_size = 1024 * 1024  # 1 MB
             downloaded_size = 0
+            prev_progress = -1
 
             with open(file_path, "wb") as f:
                 for data in response.iter_content(block_size):
                     f.write(data)
                     downloaded_size += len(data)
                     percentage = round(downloaded_size / total_size * 100, 1)
-                    yield f"⬇️ Downloading: {filename}: {percentage} %"
+                    current_progress = int(percentage // 5)
+                    
+                    if current_progress > prev_progress:
+                        progress_bar = "🟩🟩" * current_progress + "" * (50 - current_progress)
+                        total_size_mb = total_size / (1024 * 1024)  # Convert total_size to megabytes
+                        yield f"🔽 Downloading: {filename} Size: {total_size_mb:.2f}mb {progress_bar} {percentage:.1f}%"
+                        prev_progress = current_progress
+
             num_downloaded += 1
 
         except requests.exceptions.RequestException as e:
-            yield f"❌ Couldn´t download {filename}. Error: {e}"
+            yield f"❌ Couldn't download {filename}. Error: {e}"
         except Exception as e:
             yield f"❌ Unknown error downloading {filename}. Error: {e}"
 
@@ -586,21 +596,18 @@ def download_models_bt():
     yield ""
 
 
+
 urls = [
     "https://huggingface.co/deepinsight/inswapper/resolve/main/inswapper_128.onnx",
     "https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth",
+    "https://huggingface.co/bluefoxcreation/Codeformer-ONNX/resolve/main/codeformer.onnx",
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth",
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth",
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x8.pth",
     "https://github.com/zllrunning/face-makeup.PyTorch/raw/master/cp/79999_iter.pth",
 ]
-     
 
-            
-css = """
-footer{display:none !important}
-"""
-with gr.Blocks(css=css) as interface:
+with gr.Blocks() as interface:
     with gr.Row():
         with gr.Row():
             with gr.Column(scale=0.4):
@@ -620,7 +627,7 @@ with gr.Blocks(css=css) as interface:
                     output_directory = gr.Text(value=outputs_dir, label="Output Directory",  interactive=True, visible=False)
                     output_name = gr.Text(label="Output Name", value="Image", interactive=True, visible=False)
 
-                with gr.Tab("🪄 Others"):
+                with gr.Tab("🎭 Masks"):
                     with gr.Accordion("Advanced Mask", open=False):
                         enable_face_parser_mask = gr.Checkbox(label="Enable Face Parsing", value=False, interactive=True)
 
@@ -692,30 +699,31 @@ with gr.Blocks(css=css) as interface:
                 with gr.Box():
                     with gr.Row():
                         button_models_download = gr.Button(value="🔽 Download Models", label="Download Models")
-                        unload_models_button = gr.Button(value="🤖 Unload Models", label="Unload Models")
+                        unload_models_button = gr.Button(value="🚀 Unload Models", label="Unload Models")
                 with gr.Box():
                     with gr.Row():
                         output_directory_button = gr.Button("📂 Open Results", interactive=True)
-                        output_video_button = gr.Button("🎬 Play Video", interactive=True)
+                        output_video_button = gr.Button("🎞️ Play Video", interactive=True)
+                        #send_to_img2img = params_copypaste.create_buttons(["img2img"])
                         remove_image = gr.Button("❌ Remove Image/Video", interactive=True)
                         
                 with gr.Box():
                     with gr.Row():
                         gr.Markdown("### [🧩 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)")
                         gr.Markdown("### [👨‍💻 Source code](https://github.com/harisreedhar/Swap-Mukham)")
-                        gr.Markdown("### [☕ Buy me a Coffee](https://www.buymeacoffee.com/rauldlnx10p)")
+                        gr.Markdown("### [🤝 Sponsor](https://github.com/sponsors/harisreedhar)")
+                        gr.Markdown("### [🌐 Run in Colab](https://colab.research.google.com/github/harisreedhar/Swap-Mukham/blob/main/swap_mukham_colab.ipynb)")
+                        gr.Markdown("### [🤗 Acknowledgements](https://github.com/harisreedhar/Swap-Mukham#acknowledgements)")
+
 
 ## _______________________________________________ GRADIO EVENTS _______________________________________________
 
     unload_models_button.click(unload_models, outputs=info2)
     button_models_download.click(fn=download_models_bt, outputs=info2, show_progress=True,)
     remove_image.click(fn=remove_showing_image, outputs=[info2])
+    #send_to_img2img.click()
     
-    set_slider_range_event = set_slider_range_btn.click(
-        video_changed,
-        inputs=[video_input],
-        outputs=[start_frame, end_frame, video_fps],
-    )
+    set_slider_range_event = set_slider_range_btn.click(video_changed, inputs=[video_input], outputs=[start_frame, end_frame, video_fps],)
 
     trim_and_reload_event = trim_and_reload_btn.click(
         fn=trim_and_reload,
