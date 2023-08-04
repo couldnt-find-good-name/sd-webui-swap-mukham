@@ -22,12 +22,6 @@ changes 04/08/2023
 
 - Go to Automatic1111 Extensions Tab - Install from URL, paste ``https://github.com/rauldlnx10/sd-webui-swap-mukham.git`` and hit Install.
   
-## Download Models
-
-- Download [79999_iter.pth](https://drive.google.com/open?id=154JgKpzCPW82qINcVieuPH3fZ2e0P812) only if it does not download automatically.
-
-- place these models inside ``/assets/pretrained_models/``
-
 ## Disclaimer
 
 We would like to emphasize that our deep fake software is intended for responsible and ethical use only. We must stress that **users are solely responsible for their actions when using our software**.
