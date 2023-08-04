@@ -8,12 +8,11 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 - Output folder is stable-diffusion-webui\Outputs\swap-mukham, trying to make output folder change work.
   
 ## Changes
-- Now it does not load the models at start.
-- Added Download Models button.
-- Added Unload Models button to free memory.
-- Removed NSFW filter to use less memory. Be responsible.
-- A few UI changes.
-- Moved face Enhancement to Swap tab.
+changes 04/08/2023
+- Added Delete Button to delete the last generation.
+- Disabled output folder change, now default output folder is automatic1111 outputs folder/swap-mukham
+- Moved Enhancement and Keep Temp Sequence to Swap Tab.
+
   
 ### Screenshot
 ![10](https://github.com/rauldlnx10/sd-webui-swap-mukham/blob/main/working.png?raw=true)
