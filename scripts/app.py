@@ -12,7 +12,7 @@ import insightface
 import onnxruntime
 import numpy as np
 import gradio as gr
-from tqdm.auto import tqdm
+from tqdm import tqdm
 import concurrent.futures
 from moviepy.editor import VideoFileClip
 import requests
