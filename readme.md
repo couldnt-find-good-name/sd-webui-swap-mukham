@@ -8,6 +8,10 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 - Output folder is stable-diffusion-webui\Outputs\swap-mukham, trying to make output folder change work.
   
 ## Changes
+Changes 05/08/2023
+- Added Codeformer Enhancer from original source [Swap-Mukham](https://github.com/harisreedhar/Swap-Mukham).
+- Added tqdm>=4.50.0 to requirements.txt, it must solve tdqm error at launch, (maybe causes conflicts with other extensions).
+
 changes 04/08/2023
 - Added Delete Button to delete the last generated image or video.
 - Disabled output folder change, now default output folder is automatic1111 outputs folder/swap-mukham
