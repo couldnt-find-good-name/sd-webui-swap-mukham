@@ -26,6 +26,10 @@ changes 04/08/2023
 ## Installation
 
 - Go to Automatic1111 Extensions Tab - Install from URL, paste ``https://github.com/rauldlnx10/sd-webui-swap-mukham.git`` and hit Install.
+
+## Troubleshooting 
+How to solve roop conflicts:
+[Guide]([https://github.com/harisreedhar/Swap-Mukham](https://github.com/rauldlnx10/sd-webui-swap-mukham/issues/6#issuecomment-1666626342))
   
 ## Disclaimer
 
