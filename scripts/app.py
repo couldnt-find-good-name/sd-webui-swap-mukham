@@ -619,7 +619,6 @@ urls = [
 
 with gr.Blocks() as interface:
     with gr.Row():
-        info = gr.HTML(value="", elem_id="info", interactive=False)
         with gr.Row():
             with gr.Column(scale=0.4):
                 with gr.Tab("🌟 Swap"):
@@ -700,6 +699,10 @@ with gr.Blocks() as interface:
 
                     with gr.Box(visible=False) as input_directory_group:
                         direc_input = gr.Text(label="Path", interactive=True)
+
+            with gr.Column():
+                with gr.Row():
+                    info = gr.HTML(value="", elem_id="info", interactive=False)
 
                 with gr.Row():
                     swap_button = gr.Button("✨ Swap", variant="primary")
