@@ -1,0 +1,35 @@
+#info {
+    color: #32CD32;
+	font-size: 16px;
+}
+#input_face {
+    color: #ADD8E6;
+	font-size: 16px;
+}
+#target_face {
+    color: #ADD8E6;
+	font-size: 16px;
+}
+#preview_img {
+    color: #ADD8E6;
+	font-size: 16px;
+}
+#preview_img_back {
+	background: #b4c0cc;
+}
+#extension {
+    color: #ADD8E6;
+	font-size: 18px;
+}
+#oficial {
+    color: #ADD8E6;
+	font-size: 18px;
+}
+#thanks {
+    color: #ADD8E6;
+	font-size: 18px;
+}
+#colab {
+    color: #ADD8E6;
+	font-size: 18px;
+}
