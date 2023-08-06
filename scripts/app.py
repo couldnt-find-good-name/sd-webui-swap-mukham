@@ -12,6 +12,7 @@ import insightface
 import onnxruntime
 import numpy as np
 import gradio as gr
+from PIL import Image
 from tqdm import tqdm
 import concurrent.futures
 from moviepy.editor import VideoFileClip
@@ -25,20 +26,20 @@ from modules import generation_parameters_copypaste as params_copypaste
 import modules.scripts as scripts
 from modules import script_callbacks
 
-## _______________________________________________ USER ARGS _______________________________________________
-
 
 root_path = os.getcwd()
 outputs_dir = os.path.join(root_path, "Outputs", "swap-mukham")
 
-# Verificar si la carpeta existe
+### _________________________ OUTPUT FOLDER EXISTS CHECK _________________________
+
 if not os.path.exists(outputs_dir):
-    # Si no existe, crear la carpeta
+    # if not exist create it
     os.mkdir(outputs_dir)
-    print(f"Se ha creado la carpeta {outputs_dir}")
+    print(f"{outputs_dir} folder created.")
 
 DEF_OUTPUT_PATH = outputs_dir
 USE_CUDA = True
+USE_COLAB = False
 BATCH_SIZE = 32
 WORKSPACE = None
 OUTPUT_FILE = None
@@ -71,26 +72,26 @@ FACE_ENHANCER_LIST = ["NONE"]
 FACE_ENHANCER_LIST.extend(get_available_enhancer_names())
 FACE_ENHANCER_LIST.extend(cv2_interpolations)
 
-## _______________________________________________ SET EXECUTION PROVIDER _______________________________________________
+## _________________________ SET EXECUTION PROVIDER _________________________
 
 PROVIDER = ["CPUExecutionProvider"]
 
 if USE_CUDA:
     available_providers = onnxruntime.get_available_providers()
     if "CUDAExecutionProvider" in available_providers:
-        #print("\n********** Running on CUDA **********\n")
+        print("\n Swap-Mukham: Running on CUDA \n")
         PROVIDER = ["CUDAExecutionProvider", "CPUExecutionProvider"]
     else:
         USE_CUDA = False
-        print("\n********** CUDA unavailable running on CPU **********\n")
+        print("\n*** CUDA unavailable running on CPU ***\n")
 else:
     USE_CUDA = False
-    print("\n********** Running on CPU **********\n")
+    print("\n*** Running on CPU ***\n")
 
 device = "cuda" if USE_CUDA else "cpu"
 EMPTY_CACHE = lambda: torch.cuda.empty_cache() if device == "cuda" else None
 
-## _______________________________________________ LOAD MODELS _______________________________________________
+## _________________________ LOAD MODELS _________________________
 
 base_dir = scripts.basedir()
 models_dir = os.path.join(base_dir, "assets", "pretrained_models")
@@ -115,13 +116,31 @@ def load_face_parser_model(path=os.path.join(models_dir, "79999_iter.pth")):
         FACE_PARSER = init_parser(path, mode=device)
 
 def unload_models():
-    global FACE_SWAPPER, FACE_PARSER
+    global FACE_SWAPPER, FACE_PARSER, FACE_ENHANCER, FACE_ANALYSER
+
+    # Opcional: Llamar a los métodos de cierre o liberación explícita si existen
+    if FACE_ANALYSER is not None:
+        FACE_ANALYSER.close()
+    if FACE_SWAPPER is not None:
+        FACE_SWAPPER.close()
+    if FACE_PARSER is not None:
+        FACE_PARSER.close()
+    if FACE_ENHANCER is not None:
+        FACE_ENHANCER.close()
+
+    # Liberar la memoria VRAM
+    FACE_ANALYSER = None
     FACE_SWAPPER = None
     FACE_PARSER = None
-    yield "🤖 Models unloaded."
+    FACE_ENHANCER = None
+    
+    yield "&nbsp;&nbsp;&nbsp;&nbsp;🤖 Models Unloaded from GPU"
+    time.sleep(5)
+    yield ""
     return
 
-## _______________________________________________ MAIN PROCESS _______________________________________________
+
+## _________________________ MAIN PROCESS _________________________
 
 def process(
     input_type,
@@ -154,7 +173,7 @@ def process(
     global PREVIEW
     WORKSPACE, OUTPUT_FILE, PREVIEW = None, None, None
 
-## _______________________________________________ GUI UPDATE FUNC _______________________________________________
+## _________________________ GUI UPDATE FUNC _________________________
 
     def ui_before():
         return (
@@ -182,24 +201,24 @@ def process(
 
     start_time = time.time()
     total_exec_time = lambda start_time: divmod(time.time() - start_time, 60)
-    get_finsh_text = lambda start_time: f"✔️ Completed in {int(total_exec_time(start_time)[0])} min {int(total_exec_time(start_time)[1])} sec."
+    get_finsh_text = lambda start_time: f"&nbsp;&nbsp;&nbsp;&nbsp;✔️ Completed in {int(total_exec_time(start_time)[0])} min {int(total_exec_time(start_time)[1])} sec."
 
-## _______________________________________________ PREPARE INPUTS & LOAD MODELS _______________________________________________
+## _________________________ PREPARE INPUTS & LOAD MODELS _________________________
 
-    yield "⌛️ Loading face analyser model...", *ui_before()
+    yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛️ Loading Face Analyser...", *ui_before()
     load_face_analyser_model()
 
-    yield "⌛ Loading face swapper model...", *ui_before()
+    yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Loading Face Swapper...", *ui_before()
     load_face_swapper_model()
 
     if face_enhancer_name != "NONE":
-        yield f"⌛ Loading {face_enhancer_name} model...", *ui_before()
+        yield f"&nbsp;&nbsp;&nbsp;&nbsp;⌛ Loading {face_enhancer_name} ...", *ui_before()
         FACE_ENHANCER = load_face_enhancer_model(name=face_enhancer_name, device=device)
     else:
         FACE_ENHANCER = None
 
     if enable_face_parser:
-        yield "⌛ Loading face parsing model...", *ui_before()
+        yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Loading Face Parsing...", *ui_before()
         load_face_parser_model()
 
     includes = mask_regions_to_list(mask_includes)
@@ -209,10 +228,10 @@ def process(
     sources = specifics[:half]
     specifics = specifics[half:]
 
-## _______________________________________________ ANALYSE & SWAP FUNC _______________________________________________
+## _________________________ ANALYSE & SWAP FUNC _________________________
 
     def swap_process(image_sequence):
-        yield "⌛ Analysing face data...", *ui_before()
+        yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Analysing Face Data...", *ui_before()
         if condition != "Specific Face":
             source_data = source_path, age
         else:
@@ -226,18 +245,18 @@ def process(
             scale=face_scale
         )
 
-        yield "⌛ Swapping faces...", *ui_before()
+        yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Swapping Faces...", *ui_before()
         preds, aimgs, matrs = FACE_SWAPPER.batch_forward(whole_frame_list, analysed_targets, analysed_sources)
         EMPTY_CACHE()
 
         if enable_face_parser:
-            yield "⌛ Applying face-parsing mask...", *ui_before()
+            yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Applying Face-parsing mask...", *ui_before()
             for idx, (pred, aimg) in tqdm(enumerate(zip(preds, aimgs)), total=len(preds), desc="Face parsing"):
                 preds[idx] = swap_regions(pred, aimg, FACE_PARSER, smooth_mask, includes=includes, blur=int(blur_amount))
         EMPTY_CACHE()
 
         if face_enhancer_name != "NONE":
-            yield f"⌛ Enhancing faces with {face_enhancer_name}...", *ui_before()
+            yield f"&nbsp;&nbsp;&nbsp;&nbsp;⌛ Enhancing Faces with {face_enhancer_name}...", *ui_before()
             for idx, pred in tqdm(enumerate(preds), total=len(preds), desc=f"{face_enhancer_name}"):
                 enhancer_model, enhancer_model_runner = FACE_ENHANCER
                 pred = enhancer_model_runner(pred, enhancer_model)
@@ -254,7 +273,7 @@ def process(
         split_matrs = split_list_by_lengths(matrs, num_faces_per_frame)
         del matrs
 
-        yield "⌛ Post-processing...", *ui_before()
+        yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Post-processing...", *ui_before()
         def post_process(frame_idx, frame_img, split_preds, split_aimgs, split_matrs, enable_laplacian_blend, crop_top, crop_bott, crop_left, crop_right):
             whole_img_path = frame_img
             whole_img = cv2.imread(whole_img_path)
@@ -298,38 +317,33 @@ def process(
             crop_left,
             crop_right
         )
-## _______________________________________________ IMAGE _______________________________________________
+## _________________________ IMAGE _________________________
 
     if input_type == "Image":
-        global last_generated_file
         target = cv2.imread(image_path)
-        # Obtener la fecha y hora actual
+        # Get date and time
         now = datetime.datetime.now()
-        # Formatear la fecha y hora como una cadena
+        # Format time
         date_str = now.strftime("%Y-%m-%d_%H-%M-%S")
-        # Usar la cadena como parte del nombre del archivo de salida
         output_file = os.path.join(output_path, output_name + "_" + date_str + ".png")
-        last_generated_file = output_file
         cv2.imwrite(output_file, target)
 
         for info_update in swap_process([output_file]):
             yield info_update
 
-        
         OUTPUT_FILE = output_file
         WORKSPACE = output_path
         PREVIEW = cv2.imread(output_file)[:, :, ::-1]
 
         yield get_finsh_text(start_time), *ui_after()
 
-## _______________________________________________ VIDEO _______________________________________________
+## _________________________ VIDEO _________________________
 
     elif input_type == "Video":
-        global last_generated_video
         temp_path = os.path.join(output_path, output_name, "sequence")
         os.makedirs(temp_path, exist_ok=True)
 
-        yield "⌛ Extracting video frames...", *ui_before()
+        yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Extracting video frames...", *ui_before()
         image_sequence = []
         cap = cv2.VideoCapture(video_path)
         curr_idx = 0
@@ -341,22 +355,19 @@ def process(
             image_sequence.append(frame_path)
             curr_idx += 1
         cap.release()
-        #cv2.destroyAllWindows()
+        cv2.destroyAllWindows()
 
         for info_update in swap_process(image_sequence):
             yield info_update
 
-        yield "⌛ Merging sequence...", *ui_before()
-        # Obtener la fecha y hora actual
+        yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Merging sequence...", *ui_before()
         now = datetime.datetime.now()
-        # Formatear la fecha y hora como una cadena
         date_str = now.strftime("%Y-%m-%d_%H-%M-%S")
-        # Usar la cadena como parte del nombre del archivo de salida
         output_video_path = os.path.join(output_path, output_name + "_" + date_str + ".mp4")
         merge_img_sequence_from_ref(video_path, image_sequence, output_video_path)
 
         if os.path.exists(temp_path) and not keep_output_sequence:
-            yield "⌛ Removing temporary files...", *ui_before()
+            yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Removing temporary files...", *ui_before()
             shutil.rmtree(temp_path)
         last_generated_video = output_video_path
         WORKSPACE = output_path
@@ -364,7 +375,7 @@ def process(
 
         yield get_finsh_text(start_time), *ui_after_vid()
 
-## _______________________________________________ DIRECTORY _______________________________________________
+## _________________________ DIRECTORY _________________________
 
     elif input_type == "Directory":
         extensions = ["jpg", "jpeg", "png", "bmp", "tiff", "ico", "webp"]
@@ -390,13 +401,13 @@ def process(
 
         yield get_finsh_text(start_time), *ui_after()
 
-## _______________________________________________ STREAM _______________________________________________
+## _________________________ STREAM _________________________
 
     elif input_type == "Stream":
         pass
 
 
-## _______________________________________________ GRADIO FUNC _______________________________________________
+## _________________________ GRADIO FUNC _________________________
 
 
 def update_radio(value):
@@ -473,7 +484,7 @@ def video_changed(video_path):
         )
 
 def analyse_settings_changed(detect_condition, detection_size, detection_threshold):
-    yield "⌛ Applying new values..."
+    yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Applying new values..."
     global FACE_ANALYSER
     global DETECT_CONDITION
     DETECT_CONDITION = detect_condition
@@ -483,14 +494,16 @@ def analyse_settings_changed(detect_condition, detection_size, detection_thresho
         det_size=(int(detection_size), int(detection_size)),
         det_thresh=float(detection_threshold),
     )
-    yield f"✔️ Applied detect condition:{detect_condition}, detection size: {detection_size}, detection threshold: {detection_threshold}"
+    yield f"&nbsp;&nbsp;&nbsp;&nbsp;🆗 Applied detect condition:{detect_condition}, detection size: {detection_size}, detection threshold: {detection_threshold}"
 
 def stop_running():
     global STREAMER
     if hasattr(STREAMER, "stop"):
         STREAMER.stop()
         STREAMER = None
-    return "Cancelled"
+    yield "&nbsp;&nbsp;&nbsp;&nbsp;💢 Process Stopped."
+    time.sleep(5)
+    yield ""
 
 def slider_changed(show_frame, video_path, frame_index):
     if not show_frame:
@@ -505,19 +518,17 @@ def slider_changed(show_frame, video_path, frame_index):
         visible=False
     )
 
-
 def trim_and_reload(video_path, output_path, output_name, start_frame, stop_frame):
-    yield video_path, f"⌛ Trimming video frame {start_frame} to {stop_frame}..."
+    yield video_path, f"&nbsp;&nbsp;&nbsp;&nbsp;⌛ Trimming video frame {start_frame} to {stop_frame} ..."
     try:
         output_path = os.path.join(output_path, output_name)
         trimmed_video = trim_video(video_path, output_path, start_frame, stop_frame)
-        yield trimmed_video, "✔️ Video trimmed and reloaded."
+        yield trimmed_video, "&nbsp;&nbsp;&nbsp;&nbsp;🆗 Video trimmed and reloaded."
     except Exception as e:
         print(e)
-        yield video_path, "❌ Video trimming failed. See console for more info."
+        yield video_path, "&nbsp;&nbsp;&nbsp;&nbsp;💢 Video trimming failed. See console for more info."
 
-
-## _______________________________________________ GRADIO GUI _______________________________________________
+## _________________________ GRADIO GUI _________________________
 
 class Script(scripts.Script):
     def __init__(self) -> None:
@@ -538,14 +549,14 @@ class Script(scripts.Script):
 
 def remove_showing_image():
     if OUTPUT_FILE is None:
-        yield "ℹ️ Only deletes the last generation image/video"
+        yield "&nbsp;&nbsp;&nbsp;&nbsp;💬 No Image or Video generated."
     else:
         try:
+            base_filename = os.path.basename(OUTPUT_FILE)
             os.remove(OUTPUT_FILE)
-            yield f"🗑️ {OUTPUT_FILE} deleted..."
+            yield f"&nbsp;&nbsp;&nbsp;&nbsp;🖼️ {base_filename}: has been deleted..."
         except FileNotFoundError:
-            yield f"❌ {OUTPUT_FILE} does not exist..."
-
+            yield f"&nbsp;&nbsp;&nbsp;&nbsp;💢 {base_filename}: does not exist..."
     time.sleep(5)
     yield ""
 
@@ -561,7 +572,7 @@ def download_models_bt():
             file_path = os.path.join(models_download_dir, filename)
 
             if os.path.exists(file_path):
-                yield f"ℹ {filename} already exists. Skipping download."
+                yield f"&nbsp;&nbsp;&nbsp;&nbsp;💬 {filename} already exists. Skipping download."
                 num_downloaded += 1
                 continue
 
@@ -578,24 +589,22 @@ def download_models_bt():
                     current_progress = int(percentage // 5)
                     
                     if current_progress > prev_progress:
-                        progress_bar = "🟩🟩" * current_progress + "" * (50 - current_progress)
+                        progress_bar = "🔸" * current_progress + "" * (50 - current_progress)
                         total_size_mb = total_size / (1024 * 1024)  # Convert total_size to megabytes
-                        yield f"🔽 Downloading: {filename} Size: {total_size_mb:.2f}mb {progress_bar} {percentage:.1f}%"
+                        yield f"&nbsp;&nbsp;&nbsp;&nbsp;🔽 Downloading: {filename} | {total_size_mb:.2f}mb - {progress_bar} {percentage:.1f}%"
                         prev_progress = current_progress
 
             num_downloaded += 1
 
         except requests.exceptions.RequestException as e:
-            yield f"❌ Couldn't download {filename}. Error: {e}"
+            yield f"&nbsp;&nbsp;&nbsp;&nbsp;💢 Couldn't download {filename}. Error: {e}"
         except Exception as e:
-            yield f"❌ Unknown error downloading {filename}. Error: {e}"
+            yield f"&nbsp;&nbsp;&nbsp;&nbsp;💢 Unknown error downloading {filename}. Error: {e}"
 
     if num_downloaded == num_urls:
-        yield "✅ All Models downloaded."
+        yield "&nbsp;&nbsp;&nbsp;&nbsp;🆗 All Models downloaded."
     time.sleep(5)
     yield ""
-
-
 
 urls = [
     "https://huggingface.co/deepinsight/inswapper/resolve/main/inswapper_128.onnx",
@@ -607,8 +616,10 @@ urls = [
     "https://github.com/zllrunning/face-makeup.PyTorch/raw/master/cp/79999_iter.pth",
 ]
 
+
 with gr.Blocks() as interface:
     with gr.Row():
+        info = gr.HTML(value="", elem_id="info", interactive=False)
         with gr.Row():
             with gr.Column(scale=0.4):
                 with gr.Tab("🌟 Swap"):
@@ -622,10 +633,6 @@ with gr.Blocks() as interface:
                     detection_size = gr.Number(label="Detection Size", value=DETECT_SIZE, interactive=True)
                     detection_threshold = gr.Number(label="Detection Threshold", value=DETECT_THRESH, interactive=True)
                     apply_detection_settings = gr.Button("Apply settings", variant="primary")
-
-###               with gr.Tab("📤 Output"):
-                    output_directory = gr.Text(value=outputs_dir, label="Output Directory",  interactive=True, visible=False)
-                    output_name = gr.Text(label="Output Name", value="Image", interactive=True, visible=False)
 
                 with gr.Tab("🎭 Masks"):
                     with gr.Accordion("Advanced Mask", open=False):
@@ -645,8 +652,15 @@ with gr.Blocks() as interface:
                         crop_right = gr.Number(label="Right", value=0, minimum=0, interactive=True)
 
                     enable_laplacian_blend = gr.Checkbox(label="Laplacian Blending", value=True, interactive=True)
+                
+                with gr.Tab("Ⓜ️ Models"):
+                    button_models_download = gr.Button(value="🔽 Download Models", label="Download Models", visible=not USE_COLAB)
+                    output_directory = gr.Text(value=outputs_dir, label="Output Directory",  interactive=True, visible=False)
+                    output_name = gr.Text(label="Output Name", value="Image", interactive=True, visible=False)
 
-                source_image_input = gr.Image(label="Input face", type="filepath", interactive=True)
+                with gr.Box():
+                    gr.HTML("""&nbsp;&nbsp;&nbsp;Input Face""", elem_id="input_face")
+                    source_image_input = gr.Image(label="Input Face", elem_id="input_face", type="filepath", interactive=True)
 
                 with gr.Box(visible=False) as specific_face:
                     for i in range(NUM_OF_SRC_SPECIFIC):
@@ -661,68 +675,60 @@ with gr.Blocks() as interface:
                     distance_slider = gr.Slider(minimum=0, maximum=2, value=0.6, interactive=True, label="Distance", info="Lower distance is more similar and higher distance is less similar to the target face.")
 
                 with gr.Group():
-                    input_type = gr.Radio(["Image", "Video", "Directory"], label="Target", value="Video")
+                    with gr.Box():
+                        gr.HTML("""&nbsp;&nbsp;&nbsp;Target Face</span>""", elem_id="target_face")
+                        input_type = gr.Radio(["Image", "Video", "Directory"], label="", value="Video")
 
                     with gr.Box(visible=False) as input_image_group:
-                        image_input = gr.Image(label="Target Image", interactive=True, type="filepath")
-
+                        image_input = gr.Image(interactive=True, type="filepath", elem_id="preview_img_back")
+                        
                     with gr.Box(visible=True) as input_video_group:
-                        vid_widget = gr.Video
+                        vid_widget = gr.Text if USE_COLAB else gr.Video
                         video_input = vid_widget(
                             label="Target Video Path", interactive=True
                         )
-                        with gr.Accordion("✂️ Video Cut", open=False):
+                        with gr.Accordion("✂️ Video Edit", open=False):
                             with gr.Column():
                                 with gr.Row():
-                                    set_slider_range_btn = gr.Button("Set frame range", interactive=True)
+                                    set_slider_range_btn = gr.Button("Get Frames Range", interactive=True)
                                     show_trim_preview_btn = gr.Checkbox(label="Show frame when slider change", value=True, interactive=True)
 
                                 video_fps = gr.Number(value=30, interactive=False, label="Fps", visible=False)
-                                start_frame = gr.Slider(minimum=0, maximum=1, value=0, step=1, interactive=True, label="Start Frame", info="")
-                                end_frame = gr.Slider(minimum=0, maximum=1, value=1, step=1, interactive=True, label="End Frame", info="")
-                            trim_and_reload_btn = gr.Button("Cut and Reload", interactive=True)
+                                start_frame = gr.Slider(minimum=0, maximum=1, value=0, step=1, interactive=True, label="◀️ Start Frame", info="")
+                                end_frame = gr.Slider(minimum=0, maximum=1, value=1, step=1, interactive=True, label="▶️ End Frame", info="")
+                            trim_and_reload_btn = gr.Button("Cut and Reload", variant="primary", interactive=True)
 
                     with gr.Box(visible=False) as input_directory_group:
                         direc_input = gr.Text(label="Path", interactive=True)
 
-            with gr.Column(scale=0.6):
-                with gr.Box():
-                    info = gr.HTML(value="")
-                    info2 = gr.HTML(value="")
                 with gr.Row():
                     swap_button = gr.Button("✨ Swap", variant="primary")
                     cancel_button = gr.Button("⛔ Cancel", variant="stop")
-                    
-                preview_image = gr.Image(label="Output", interactive=False)
-                preview_video = gr.Video(label="Output", interactive=False, visible=False)
+                    remove_image = gr.Button("🗑️ Remove", interactive=True, variant="stop")   
+                with gr.Row(scale=0.4):
+                    output_directory_button = gr.Button("📂 Open Results", visible=not USE_COLAB)
+                    output_video_button = gr.Button("🎞️ Play Video", visible=not USE_COLAB)
+                    unload_models_button = gr.Button(value="🆓 Unload Models", label="Unload Models", visible=not USE_COLAB)
 
                 with gr.Box():
-                    with gr.Row():
-                        button_models_download = gr.Button(value="🔽 Download Models", label="Download Models")
-                        unload_models_button = gr.Button(value="🚀 Unload Models", label="Unload Models")
-                with gr.Box():
-                    with gr.Row():
-                        output_directory_button = gr.Button("📂 Open Results", interactive=True)
-                        output_video_button = gr.Button("🎞️ Play Video", interactive=True)
-                        #send_to_img2img = params_copypaste.create_buttons(["img2img"])
-                        remove_image = gr.Button("❌ Remove Image/Video", interactive=True)
+                    gr.HTML("""&nbsp;&nbsp;&nbsp;Preview""", elem_id="preview_img")
+                    preview_image = gr.Image(label="Output", interactive=False)
+                    preview_video = gr.Video(label="Output", interactive=False, visible=False)
                         
                 with gr.Box():
                     with gr.Row():
-                        gr.Markdown("### [🧩 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)")
-                        gr.Markdown("### [👨‍💻 Source code](https://github.com/harisreedhar/Swap-Mukham)")
-                        gr.Markdown("### [🤝 Sponsor](https://github.com/sponsors/harisreedhar)")
-                        gr.Markdown("### [🌐 Run in Colab](https://colab.research.google.com/github/harisreedhar/Swap-Mukham/blob/main/swap_mukham_colab.ipynb)")
-                        gr.Markdown("### [🤗 Acknowledgements](https://github.com/harisreedhar/Swap-Mukham#acknowledgements)")
+                        gr.Markdown("[🧩 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)", elem_id="extension")
+                        gr.Markdown("[📝 Official version](https://github.com/harisreedhar/Swap-Mukham)", elem_id="oficial")
+                        gr.Markdown("[📜 Acknowledgements](https://github.com/harisreedhar/Swap-Mukham#acknowledgements)", elem_id="thanks")
+                        gr.Markdown("[☁️ Run in Colab](https://colab.research.google.com/github/harisreedhar/Swap-Mukham/blob/main/swap_mukham_colab.ipynb)", elem_id="colab")
 
+## _________________________ GRADIO EVENTS _________________________
 
-## _______________________________________________ GRADIO EVENTS _______________________________________________
-
-    unload_models_button.click(unload_models, outputs=info2)
-    button_models_download.click(fn=download_models_bt, outputs=info2, show_progress=True,)
-    remove_image.click(fn=remove_showing_image, outputs=[info2])
+    unload_models_button.click(unload_models, outputs=info)
+    button_models_download.click(fn=download_models_bt, outputs=info, show_progress=True,)
+    remove_image.click(fn=remove_showing_image, outputs=info)
     #send_to_img2img.click()
-    
+ 
     set_slider_range_event = set_slider_range_btn.click(video_changed, inputs=[video_input], outputs=[start_frame, end_frame, video_fps],)
 
     trim_and_reload_event = trim_and_reload_btn.click(
@@ -820,12 +826,14 @@ with gr.Blocks() as interface:
         ],
         show_progress=True,
     )
-    output_directory_button.click(
-        lambda: open_directory(path=outputs_dir), inputs=None, outputs=None
-    )
-    output_video_button.click(
-        lambda: open_directory(path=OUTPUT_FILE), inputs=None, outputs=None
-    )
+    output_directory_button.click(lambda: open_directory(path=outputs_dir), inputs=None, outputs=None)
+    output_video_button.click(lambda: open_directory(path=OUTPUT_FILE), inputs=None, outputs=None)
+
+if __name__ == "__main__":
+    if USE_COLAB:
+        print("Running in colab mode")
+
+    interface.queue(concurrency_count=2, max_size=20).launch(share=USE_COLAB)
 
 script = Script()
 script_callbacks.on_ui_tabs(script.on_ui_tabs)
