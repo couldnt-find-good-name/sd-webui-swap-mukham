@@ -9,6 +9,11 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 - This version does not work in Google Colab, sorry.
   
 ## Changes
+
+Changes 06/08/2023
+- Reordered some UI elements, moved Download Models button to a Tab.
+- Better Info panel.
+
 Changes 05/08/2023
 - Added Codeformer Enhancer from original source [Swap-Mukham](https://github.com/harisreedhar/Swap-Mukham).
 - Added tqdm>=4.50.0 to requirements.txt, it must solve tdqm error at launch, (maybe causes conflicts with other extensions).
