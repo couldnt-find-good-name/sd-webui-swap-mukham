@@ -29,13 +29,22 @@ from modules import script_callbacks
 
 root_path = os.getcwd()
 outputs_dir = os.path.join(root_path, "Outputs", "swap-mukham")
+   
+USE_COLAB = False
+try:
+    from google.colab import files
+    USE_COLAB = True
+except ImportError:
+    USE_COLAB = False
 
-### _________________________ OUTPUT FOLDER EXISTS CHECK _________________________
+outputs_dir = '/content/outputs' if USE_COLAB else os.path.join(root_path, "Outputs", "swap-mukham")
 
 if not os.path.exists(outputs_dir):
-    # if not exist create it
-    os.mkdir(outputs_dir)
+    # Si no existe, crea el directorio
+    os.makedirs(outputs_dir)
     print(f"{outputs_dir} folder created.")
+
+
 
 DEF_OUTPUT_PATH = outputs_dir
 USE_CUDA = True
@@ -79,7 +88,7 @@ PROVIDER = ["CPUExecutionProvider"]
 if USE_CUDA:
     available_providers = onnxruntime.get_available_providers()
     if "CUDAExecutionProvider" in available_providers:
-        print("\n Swap-Mukham: Running on CUDA \n")
+        print("\nSwap-Mukham: Running on CUDA \n")
         PROVIDER = ["CUDAExecutionProvider", "CPUExecutionProvider"]
     else:
         USE_CUDA = False
@@ -134,7 +143,7 @@ def unload_models():
     FACE_PARSER = None
     FACE_ENHANCER = None
     
-    yield "&nbsp;&nbsp;&nbsp;&nbsp;🤖 Models Unloaded from GPU"
+    yield "🤖 Models Unloaded from GPU"
     time.sleep(5)
     yield ""
     return
@@ -205,20 +214,20 @@ def process(
 
 ## _________________________ PREPARE INPUTS & LOAD MODELS _________________________
 
-    yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛️ Loading Face Analyser...", *ui_before()
+    yield "⌛️ Loading Face Analyser...", *ui_before()
     load_face_analyser_model()
 
-    yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Loading Face Swapper...", *ui_before()
+    yield "⌛ Loading Face Swapper...", *ui_before()
     load_face_swapper_model()
 
     if face_enhancer_name != "NONE":
-        yield f"&nbsp;&nbsp;&nbsp;&nbsp;⌛ Loading {face_enhancer_name} ...", *ui_before()
+        yield f"⌛ Loading {face_enhancer_name} ...", *ui_before()
         FACE_ENHANCER = load_face_enhancer_model(name=face_enhancer_name, device=device)
     else:
         FACE_ENHANCER = None
 
     if enable_face_parser:
-        yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Loading Face Parsing...", *ui_before()
+        yield "⌛ Loading Face Parsing...", *ui_before()
         load_face_parser_model()
 
     includes = mask_regions_to_list(mask_includes)
@@ -231,7 +240,7 @@ def process(
 ## _________________________ ANALYSE & SWAP FUNC _________________________
 
     def swap_process(image_sequence):
-        yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Analysing Face Data...", *ui_before()
+        yield "⌛ Analysing Face Data...", *ui_before()
         if condition != "Specific Face":
             source_data = source_path, age
         else:
@@ -245,18 +254,18 @@ def process(
             scale=face_scale
         )
 
-        yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Swapping Faces...", *ui_before()
+        yield "⌛ Swapping Faces...", *ui_before()
         preds, aimgs, matrs = FACE_SWAPPER.batch_forward(whole_frame_list, analysed_targets, analysed_sources)
         EMPTY_CACHE()
 
         if enable_face_parser:
-            yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Applying Face-parsing mask...", *ui_before()
+            yield "⌛ Applying Face-parsing mask...", *ui_before()
             for idx, (pred, aimg) in tqdm(enumerate(zip(preds, aimgs)), total=len(preds), desc="Face parsing"):
                 preds[idx] = swap_regions(pred, aimg, FACE_PARSER, smooth_mask, includes=includes, blur=int(blur_amount))
         EMPTY_CACHE()
 
         if face_enhancer_name != "NONE":
-            yield f"&nbsp;&nbsp;&nbsp;&nbsp;⌛ Enhancing Faces with {face_enhancer_name}...", *ui_before()
+            yield f"⌛ Enhancing Faces with {face_enhancer_name}...", *ui_before()
             for idx, pred in tqdm(enumerate(preds), total=len(preds), desc=f"{face_enhancer_name}"):
                 enhancer_model, enhancer_model_runner = FACE_ENHANCER
                 pred = enhancer_model_runner(pred, enhancer_model)
@@ -273,7 +282,7 @@ def process(
         split_matrs = split_list_by_lengths(matrs, num_faces_per_frame)
         del matrs
 
-        yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Post-processing...", *ui_before()
+        yield "⌛ Post-processing...", *ui_before()
         def post_process(frame_idx, frame_img, split_preds, split_aimgs, split_matrs, enable_laplacian_blend, crop_top, crop_bott, crop_left, crop_right):
             whole_img_path = frame_img
             whole_img = cv2.imread(whole_img_path)
@@ -343,7 +352,7 @@ def process(
         temp_path = os.path.join(output_path, output_name, "sequence")
         os.makedirs(temp_path, exist_ok=True)
 
-        yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Extracting video frames...", *ui_before()
+        yield "⌛ Extracting video frames...", *ui_before()
         image_sequence = []
         cap = cv2.VideoCapture(video_path)
         curr_idx = 0
@@ -360,14 +369,14 @@ def process(
         for info_update in swap_process(image_sequence):
             yield info_update
 
-        yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Merging sequence...", *ui_before()
+        yield "⌛ Merging sequence...", *ui_before()
         now = datetime.datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M-%S")
         output_video_path = os.path.join(output_path, output_name + "_" + date_str + ".mp4")
         merge_img_sequence_from_ref(video_path, image_sequence, output_video_path)
 
         if os.path.exists(temp_path) and not keep_output_sequence:
-            yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Removing temporary files...", *ui_before()
+            yield "⌛ Removing temporary files...", *ui_before()
             shutil.rmtree(temp_path)
         last_generated_video = output_video_path
         WORKSPACE = output_path
@@ -484,7 +493,7 @@ def video_changed(video_path):
         )
 
 def analyse_settings_changed(detect_condition, detection_size, detection_threshold):
-    yield "&nbsp;&nbsp;&nbsp;&nbsp;⌛ Applying new values..."
+    yield "⌛ Applying new values..."
     global FACE_ANALYSER
     global DETECT_CONDITION
     DETECT_CONDITION = detect_condition
@@ -494,14 +503,14 @@ def analyse_settings_changed(detect_condition, detection_size, detection_thresho
         det_size=(int(detection_size), int(detection_size)),
         det_thresh=float(detection_threshold),
     )
-    yield f"&nbsp;&nbsp;&nbsp;&nbsp;🆗 Applied detect condition:{detect_condition}, detection size: {detection_size}, detection threshold: {detection_threshold}"
+    yield f"🆗 Applied detect condition:{detect_condition}, detection size: {detection_size}, detection threshold: {detection_threshold}"
 
 def stop_running():
     global STREAMER
     if hasattr(STREAMER, "stop"):
         STREAMER.stop()
         STREAMER = None
-    yield "&nbsp;&nbsp;&nbsp;&nbsp;💢 Process Stopped."
+    yield "💢 Process Stopped."
     time.sleep(5)
     yield ""
 
@@ -519,14 +528,14 @@ def slider_changed(show_frame, video_path, frame_index):
     )
 
 def trim_and_reload(video_path, output_path, output_name, start_frame, stop_frame):
-    yield video_path, f"&nbsp;&nbsp;&nbsp;&nbsp;⌛ Trimming video frame {start_frame} to {stop_frame} ..."
+    yield video_path, f"⌛ Trimming video frame {start_frame} to {stop_frame} ..."
     try:
         output_path = os.path.join(output_path, output_name)
         trimmed_video = trim_video(video_path, output_path, start_frame, stop_frame)
-        yield trimmed_video, "&nbsp;&nbsp;&nbsp;&nbsp;🆗 Video trimmed and reloaded."
+        yield trimmed_video, "🆗 Video trimmed and reloaded."
     except Exception as e:
         print(e)
-        yield video_path, "&nbsp;&nbsp;&nbsp;&nbsp;💢 Video trimming failed. See console for more info."
+        yield video_path, "💢 Video trimming failed. See console for more info."
 
 ## _________________________ GRADIO GUI _________________________
 
@@ -549,14 +558,14 @@ class Script(scripts.Script):
 
 def remove_showing_image():
     if OUTPUT_FILE is None:
-        yield "&nbsp;&nbsp;&nbsp;&nbsp;💬 No Image or Video generated."
+        yield "💬 No Image or Video generated."
     else:
         try:
             base_filename = os.path.basename(OUTPUT_FILE)
             os.remove(OUTPUT_FILE)
-            yield f"&nbsp;&nbsp;&nbsp;&nbsp;🖼️ {base_filename}: has been deleted..."
+            yield f"🖼️ {base_filename}: has been deleted..."
         except FileNotFoundError:
-            yield f"&nbsp;&nbsp;&nbsp;&nbsp;💢 {base_filename}: does not exist..."
+            yield f"💢 {base_filename}: does not exist..."
     time.sleep(5)
     yield ""
 
@@ -572,7 +581,7 @@ def download_models_bt():
             file_path = os.path.join(models_download_dir, filename)
 
             if os.path.exists(file_path):
-                yield f"&nbsp;&nbsp;&nbsp;&nbsp;💬 {filename} already exists. Skipping download."
+                yield f"💬 {filename} already exists. Skipping download."
                 num_downloaded += 1
                 continue
 
@@ -589,20 +598,20 @@ def download_models_bt():
                     current_progress = int(percentage // 5)
                     
                     if current_progress > prev_progress:
-                        progress_bar = "🔸" * current_progress + "" * (50 - current_progress)
+                        progress_bar = "🟩" * current_progress + "" * (50 - current_progress)
                         total_size_mb = total_size / (1024 * 1024)  # Convert total_size to megabytes
-                        yield f"&nbsp;&nbsp;&nbsp;&nbsp;🔽 Downloading: {filename} | {total_size_mb:.2f}mb - {progress_bar} {percentage:.1f}%"
+                        yield f"🔽 Downloading: {filename}({total_size_mb:.2f}) MB {progress_bar} Completed: {percentage:.1f}%"
                         prev_progress = current_progress
 
             num_downloaded += 1
 
         except requests.exceptions.RequestException as e:
-            yield f"&nbsp;&nbsp;&nbsp;&nbsp;💢 Couldn't download {filename}. Error: {e}"
+            yield f"💢 Couldn't download {filename}. Error: {e}"
         except Exception as e:
-            yield f"&nbsp;&nbsp;&nbsp;&nbsp;💢 Unknown error downloading {filename}. Error: {e}"
+            yield f"💢 Unknown error downloading {filename}. Error: {e}"
 
     if num_downloaded == num_urls:
-        yield "&nbsp;&nbsp;&nbsp;&nbsp;🆗 All Models downloaded."
+        yield "🆗 All Models downloaded."
     time.sleep(5)
     yield ""
 
@@ -618,6 +627,7 @@ urls = [
 
 
 with gr.Blocks() as interface:
+
     with gr.Row():
         with gr.Row():
             with gr.Column(scale=0.4):
@@ -701,16 +711,15 @@ with gr.Blocks() as interface:
                         direc_input = gr.Text(label="Path", interactive=True)
 
             with gr.Column():
-                with gr.Row():
-                    info = gr.HTML(value="", elem_id="info", interactive=False)
-
+                info = gr.HTML(value="", elem_id="info", interactive=False)            
                 with gr.Row():
                     swap_button = gr.Button("✨ Swap", variant="primary")
                     cancel_button = gr.Button("⛔ Cancel", variant="stop")
-                    remove_image = gr.Button("🗑️ Remove", interactive=True, variant="stop")   
-                with gr.Row(scale=0.4):
+                    remove_image = gr.Button("🗑️ Remove", interactive=True, variant="stop")
+                    
+                with gr.Row():
                     output_directory_button = gr.Button("📂 Open Results", visible=not USE_COLAB)
-                    output_video_button = gr.Button("🎞️ Play Video", visible=not USE_COLAB)
+                    output_video_button = gr.Button("📦 Open File", visible=not USE_COLAB)
                     unload_models_button = gr.Button(value="🆓 Unload Models", label="Unload Models", visible=not USE_COLAB)
 
                 with gr.Box():
@@ -807,8 +816,6 @@ with gr.Blocks() as interface:
     swap_outputs = [
         info,
         preview_image,
-        output_directory_button,
-        output_video_button,
         preview_video,
     ]
 
