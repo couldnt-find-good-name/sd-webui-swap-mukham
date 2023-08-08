@@ -816,6 +816,8 @@ with gr.Blocks() as interface:
     swap_outputs = [
         info,
         preview_image,
+        output_directory_button,
+        output_video_button,
         preview_video,
     ]
 
