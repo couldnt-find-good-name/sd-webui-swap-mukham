@@ -26,7 +26,6 @@ from modules import generation_parameters_copypaste as params_copypaste
 import modules.scripts as scripts
 from modules import script_callbacks
 
-
 root_path = os.getcwd()
 outputs_dir = os.path.join(root_path, "Outputs", "swap-mukham")
    
@@ -43,8 +42,6 @@ if not os.path.exists(outputs_dir):
     # Si no existe, crea el directorio
     os.makedirs(outputs_dir)
     print(f"{outputs_dir} folder created.")
-
-
 
 DEF_OUTPUT_PATH = outputs_dir
 USE_CUDA = True
@@ -127,16 +124,6 @@ def load_face_parser_model(path=os.path.join(models_dir, "79999_iter.pth")):
 def unload_models():
     global FACE_SWAPPER, FACE_PARSER, FACE_ENHANCER, FACE_ANALYSER
 
-    # Opcional: Llamar a los métodos de cierre o liberación explícita si existen
-    if FACE_ANALYSER is not None:
-        FACE_ANALYSER.close()
-    if FACE_SWAPPER is not None:
-        FACE_SWAPPER.close()
-    if FACE_PARSER is not None:
-        FACE_PARSER.close()
-    if FACE_ENHANCER is not None:
-        FACE_ENHANCER.close()
-
     # Liberar la memoria VRAM
     FACE_ANALYSER = None
     FACE_SWAPPER = None
@@ -147,7 +134,6 @@ def unload_models():
     time.sleep(5)
     yield ""
     return
-
 
 ## _________________________ MAIN PROCESS _________________________
 
@@ -415,9 +401,7 @@ def process(
     elif input_type == "Stream":
         pass
 
-
 ## _________________________ GRADIO FUNC _________________________
-
 
 def update_radio(value):
     if value == "Image":
@@ -445,7 +429,6 @@ def update_radio(value):
             gr.update(visible=True),
         )
 
-
 def swap_option_changed(value):
     if value.startswith("Age"):
         return (
@@ -460,7 +443,6 @@ def swap_option_changed(value):
             gr.update(visible=False),
         )
     return gr.update(visible=False), gr.update(visible=False), gr.update(visible=True)
-
 
 def video_changed(video_path):
     sliders_update = gr.Slider.update
@@ -555,7 +537,6 @@ class Script(scripts.Script):
     def on_ui_tabs(self):
         return [(interface, "Swap", "swap")]
 
-
 def remove_showing_image():
     if OUTPUT_FILE is None:
         yield "💬 No Image or Video generated."
@@ -564,10 +545,12 @@ def remove_showing_image():
             base_filename = os.path.basename(OUTPUT_FILE)
             os.remove(OUTPUT_FILE)
             yield f"🖼️ {base_filename}: has been deleted..."
+            print("image removed")
         except FileNotFoundError:
             yield f"💢 {base_filename}: does not exist..."
     time.sleep(5)
     yield ""
+
 
 def download_models_bt():
     models_download_dir = os.path.join(base_dir, "assets", "pretrained_models")
@@ -581,7 +564,7 @@ def download_models_bt():
             file_path = os.path.join(models_download_dir, filename)
 
             if os.path.exists(file_path):
-                yield f"💬 {filename} already exists. Skipping download."
+                yield f"💬 Checking availible models."
                 num_downloaded += 1
                 continue
 
@@ -600,7 +583,7 @@ def download_models_bt():
                     if current_progress > prev_progress:
                         progress_bar = "🟩" * current_progress + "" * (50 - current_progress)
                         total_size_mb = total_size / (1024 * 1024)  # Convert total_size to megabytes
-                        yield f"🔽 Downloading: {filename}({total_size_mb:.2f}) MB {progress_bar} Completed: {percentage:.1f}%"
+                        yield f"Downloading: {filename}({total_size_mb:.2f}) MB {progress_bar} Completed: {percentage:.1f}%"
                         prev_progress = current_progress
 
             num_downloaded += 1
@@ -625,114 +608,110 @@ urls = [
     "https://github.com/zllrunning/face-makeup.PyTorch/raw/master/cp/79999_iter.pth",
 ]
 
-
 with gr.Blocks() as interface:
-
     with gr.Row():
-        with gr.Row():
-            with gr.Column(scale=0.4):
-                with gr.Tab("🌟 Swap"):
-                    swap_option = gr.Dropdown(swap_options_list, label="Face to swap", multiselect=False, show_label=True, value=swap_options_list[0], interactive=True)
-                    age = gr.Number(value=25, label="Age", info="Im not sure if this work", interactive=True, visible=False)
-                    face_enhancer_name = gr.Dropdown(FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False,interactive=True)
-                    keep_output_sequence = gr.Checkbox(value=False, label="Keep Temp Sequence", interactive=True)
-                    
-                with gr.Tab("🔍 Detection"):
-                    detect_condition_dropdown = gr.Dropdown( detect_conditions, label="Condition", value=DETECT_CONDITION, interactive=True, info="This condition is only used when multiple faces are detected on source or specific image.")
-                    detection_size = gr.Number(label="Detection Size", value=DETECT_SIZE, interactive=True)
-                    detection_threshold = gr.Number(label="Detection Threshold", value=DETECT_THRESH, interactive=True)
-                    apply_detection_settings = gr.Button("Apply settings", variant="primary")
+        with gr.Column(scale=0.4):
+            with gr.Tab("🌟 Swap", elem_id="swap_tab", style={"background-color": "#ff6347"}):
+                swap_option = gr.Dropdown(swap_options_list, label="Select Face to Swap", multiselect=False, show_label=True, value=swap_options_list[0], interactive=True)
 
-                with gr.Tab("🎭 Masks"):
-                    with gr.Accordion("Advanced Mask", open=False):
-                        enable_face_parser_mask = gr.Checkbox(label="Enable Face Parsing", value=False, interactive=True)
-
-                        mask_include = gr.Dropdown(mask_regions.keys(), value=MASK_INCLUDE, multiselect=True, label="Include", interactive=True)
-                        mask_soft_kernel = gr.Number(label="Soft Erode Kernel", value=MASK_SOFT_KERNEL, minimum=3, interactive=True, visible = False)
-                        mask_soft_iterations = gr.Number(label="Soft Erode Iterations", value=MASK_SOFT_ITERATIONS, minimum=0, interactive=True)
-                        blur_amount = gr.Number(label="Mask Blur", value=MASK_BLUR_AMOUNT, minimum=0, interactive=True)
-
-                    face_scale = gr.Slider(label="Face Scale", minimum=0, maximum=2, value=1, interactive=True)
-
-                    with gr.Accordion("Crop Mask", open=False):
-                        crop_top = gr.Number(label="Top", value=0, minimum=0, interactive=True)
-                        crop_bott = gr.Number(label="Bottom", value=0, minimum=0, interactive=True)
-                        crop_left = gr.Number(label="Left", value=0, minimum=0, interactive=True)
-                        crop_right = gr.Number(label="Right", value=0, minimum=0, interactive=True)
-
-                    enable_laplacian_blend = gr.Checkbox(label="Laplacian Blending", value=True, interactive=True)
-                
-                with gr.Tab("Ⓜ️ Models"):
-                    button_models_download = gr.Button(value="🔽 Download Models", label="Download Models", visible=not USE_COLAB)
-                    output_directory = gr.Text(value=outputs_dir, label="Output Directory",  interactive=True, visible=False)
-                    output_name = gr.Text(label="Output Name", value="Image", interactive=True, visible=False)
-
-                with gr.Box():
-                    gr.HTML("""&nbsp;&nbsp;&nbsp;Input Face""", elem_id="input_face")
-                    source_image_input = gr.Image(label="Input Face", elem_id="input_face", type="filepath", interactive=True)
-
-                with gr.Box(visible=False) as specific_face:
-                    for i in range(NUM_OF_SRC_SPECIFIC):
-                        idx = i + 1
-                        code = "\n"
-                        code += f"with gr.Tab(label='({idx})'):"
-                        code += "\n\twith gr.Row():"
-                        code += f"\n\t\tsrc{idx} = gr.Image(interactive=True, type='numpy', label='Source Face {idx}')"
-                        code += f"\n\t\ttrg{idx} = gr.Image(interactive=True, type='numpy', label='Specific Face {idx}')"
-                        exec(code)
-
-                    distance_slider = gr.Slider(minimum=0, maximum=2, value=0.6, interactive=True, label="Distance", info="Lower distance is more similar and higher distance is less similar to the target face.")
-
-                with gr.Group():
-                    with gr.Box():
-                        gr.HTML("""&nbsp;&nbsp;&nbsp;Target Face</span>""", elem_id="target_face")
-                        input_type = gr.Radio(["Image", "Video", "Directory"], label="", value="Video")
-
-                    with gr.Box(visible=False) as input_image_group:
-                        image_input = gr.Image(interactive=True, type="filepath", elem_id="preview_img_back")
-                        
-                    with gr.Box(visible=True) as input_video_group:
-                        vid_widget = gr.Text if USE_COLAB else gr.Video
-                        video_input = vid_widget(
-                            label="Target Video Path", interactive=True
-                        )
-                        with gr.Accordion("✂️ Video Edit", open=False):
-                            with gr.Column():
-                                with gr.Row():
-                                    set_slider_range_btn = gr.Button("Get Frames Range", interactive=True)
-                                    show_trim_preview_btn = gr.Checkbox(label="Show frame when slider change", value=True, interactive=True)
-
-                                video_fps = gr.Number(value=30, interactive=False, label="Fps", visible=False)
-                                start_frame = gr.Slider(minimum=0, maximum=1, value=0, step=1, interactive=True, label="◀️ Start Frame", info="")
-                                end_frame = gr.Slider(minimum=0, maximum=1, value=1, step=1, interactive=True, label="▶️ End Frame", info="")
-                            trim_and_reload_btn = gr.Button("Cut and Reload", variant="primary", interactive=True)
-
-                    with gr.Box(visible=False) as input_directory_group:
-                        direc_input = gr.Text(label="Path", interactive=True)
-
-            with gr.Column():
-                info = gr.HTML(value="", elem_id="info", interactive=False)            
                 with gr.Row():
-                    swap_button = gr.Button("✨ Swap", variant="primary")
-                    cancel_button = gr.Button("⛔ Cancel", variant="stop")
-                    remove_image = gr.Button("🗑️ Remove", interactive=True, variant="stop")
-                    
-                with gr.Row():
-                    output_directory_button = gr.Button("📂 Open Results", visible=not USE_COLAB)
-                    output_video_button = gr.Button("📦 Open File", visible=not USE_COLAB)
-                    unload_models_button = gr.Button(value="🆓 Unload Models", label="Unload Models", visible=not USE_COLAB)
+                    age = gr.Number(value=25, label="Age", interactive=True, visible=False)
+                    face_enhancer_name = gr.Dropdown(FACE_ENHANCER_LIST, label="Face Enhancer", value="NONE", multiselect=False, interactive=True)
 
+                keep_output_sequence = gr.Checkbox(value=False, label="Keep Temp Sequence", interactive=True)
+
+            with gr.Tab("🔍 Detection"):
+                detect_condition_dropdown = gr.Dropdown(detect_conditions, label="Detection Condition", value=DETECT_CONDITION, interactive=True)
+                detection_size = gr.Number(label="Detection Size", value=DETECT_SIZE, interactive=True)
+                detection_threshold = gr.Number(label="Detection Threshold", value=DETECT_THRESH, interactive=True)
+                apply_detection_settings = gr.Button("Apply Settings", variant="success")
+
+            with gr.Tab("🎭 Masks"):
+                enable_face_parser_mask = gr.Checkbox(label="Enable Face Parsing", value=False, interactive=True)
+
+                with gr.Row():
+                    mask_include = gr.Dropdown(mask_regions.keys(), value=MASK_INCLUDE, multiselect=True, label="Include", interactive=True)
+                    mask_soft_kernel = gr.Number(label="Soft Erode Kernel", value=MASK_SOFT_KERNEL, minimum=3, interactive=True, visible=False)
+                    mask_soft_iterations = gr.Number(label="Soft Erode Iterations", value=MASK_SOFT_ITERATIONS, minimum=0, interactive=True)
+
+                blur_amount = gr.Number(label="Mask Blur", value=MASK_BLUR_AMOUNT, minimum=0, interactive=True)
+                face_scale = gr.Slider(label="Face Scale", minimum=0, maximum=2, value=1, interactive=True)
+
+                with gr.Row():
+                    crop_top = gr.Number(label="Top", value=0, minimum=0, interactive=True)
+                    crop_bott = gr.Number(label="Bottom", value=0, minimum=0, interactive=True)
+                    crop_left = gr.Number(label="Left", value=0, minimum=0, interactive=True)
+                    crop_right = gr.Number(label="Right", value=0, minimum=0, interactive=True)
+
+                enable_laplacian_blend = gr.Checkbox(label="Laplacian Blending", value=True, interactive=True)
+
+            with gr.Tab("Ⓜ️ Models"):
+                button_models_download = gr.Button(value="🔽 Download Models", label="Download Models", elem_id="button_default", visible=not USE_COLAB)
+                output_directory = gr.Text(value=outputs_dir, label="Output Directory", interactive=True, visible=False)
+                output_name = gr.Text(label="Output Name", value="Image", interactive=True, visible=False)
+
+            with gr.Box():
+                gr.HTML("""<h4>Input Face</h4>""", elem_id="input_face")
+                source_image_input = gr.Image(label="Input Face", elem_id="input_face", type="filepath", interactive=True)
+
+            with gr.Box(visible=False) as specific_face:
+                for i in range(NUM_OF_SRC_SPECIFIC):
+                    idx = i + 1
+                    code = "\n"
+                    code += f"with gr.Tab(label='({idx})'):"
+                    code += "\n\twith gr.Row():"
+                    code += f"\n\t\tsrc{idx} = gr.Image(interactive=True, type='numpy', label='Source Face {idx}')"
+                    code += f"\n\t\ttrg{idx} = gr.Image(interactive=True, type='numpy', label='Specific Face {idx}')"
+                    exec(code)
+
+                distance_slider = gr.Slider(minimum=0, maximum=2, value=0.6, interactive=True, label="Distance")
+
+            with gr.Group():
                 with gr.Box():
-                    gr.HTML("""&nbsp;&nbsp;&nbsp;Preview""", elem_id="preview_img")
-                    preview_image = gr.Image(label="Output", interactive=False)
-                    preview_video = gr.Video(label="Output", interactive=False, visible=False)
-                        
-                with gr.Box():
-                    with gr.Row():
-                        gr.Markdown("[🧩 Extension](https://github.com/rauldlnx10/sd-webui-swap-mukham)", elem_id="extension")
-                        gr.Markdown("[📝 Official version](https://github.com/harisreedhar/Swap-Mukham)", elem_id="oficial")
-                        gr.Markdown("[📜 Acknowledgements](https://github.com/harisreedhar/Swap-Mukham#acknowledgements)", elem_id="thanks")
-                        gr.Markdown("[☁️ Run in Colab](https://colab.research.google.com/github/harisreedhar/Swap-Mukham/blob/main/swap_mukham_colab.ipynb)", elem_id="colab")
+                    gr.HTML("""<h4>Target Face</h4>""", elem_id="target_face")
+                    input_type = gr.Radio(["Image", "Video", "Directory"], label="", value="Video", elem_id="target_checkbox")
+
+                with gr.Box(visible=False) as input_image_group:
+                    image_input = gr.Image(interactive=True, type="filepath", elem_id="preview_img_back")
+
+                with gr.Box(visible=True) as input_video_group:
+                    vid_widget = gr.Text if USE_COLAB else gr.Video
+                    video_input = vid_widget(label="Target Video Path", interactive=True)
+                    with gr.Accordion("✂️ Video Edit", open=False):
+                        with gr.Column():
+                            with gr.Row():
+                                set_slider_range_btn = gr.Button("Get Frames Range", interactive=True, elem_id="button_default")
+                                show_trim_preview_btn = gr.Checkbox(label="Show Frame Preview", value=True, interactive=True)
+
+                            video_fps = gr.Number(value=30, interactive=False, label="Fps", visible=False)
+                            start_frame = gr.Slider(minimum=0, maximum=1, value=0, step=1, interactive=True, label="◀️ Start Frame")
+                            end_frame = gr.Slider(minimum=0, maximum=1, value=1, step=1, interactive=True, label="▶️ End Frame")
+                        trim_and_reload_btn = gr.Button("Trim and Reload", variant="primary", interactive=True, elem_id="button_default")
+
+                with gr.Box(visible=False) as input_directory_group:
+                    direc_input = gr.Text(label="Path", interactive=True)
+
+        with gr.Column():
+            info = gr.HTML(value="", elem_id="info", interactive=False)
+
+            with gr.Row():
+                swap_button = gr.Button("✨ Swap", variant="primary", elem_id="button_orange")
+                cancel_button = gr.Button("⛔ Cancel", variant="stop", elem_id="button_red")
+                remove_image = gr.Button(value="❌ Remove", interactive=True, elem_id="button_default")
+
+            with gr.Row():
+                output_directory_button = gr.Button("📂 Open Results Folder", elem_id="button_default", visible=not USE_COLAB)
+                output_video_button = gr.Button("🎞 Open Image/Video", elem_id="button_default", visible=not USE_COLAB)
+                unload_models_button = gr.Button(value="🆓 Free VRAM", label="Unload Models", elem_id="button_default", visible=not USE_COLAB)
+            with gr.Box():
+                preview_image = gr.Image(label="Output", interactive=False, elem_id="prev_image_size")
+                preview_video = gr.Video(label="Output", interactive=False, visible=False, elem_id="prev_video_size")
+
+            with gr.Row():
+                gr.HTML("""<a href="https://github.com/rauldlnx10/sd-webui-swap-mukham">🧩 Extension</a>""", elem_id="extension")
+                gr.HTML("""<a href="https://github.com/harisreedhar/Swap-Mukham">📝 Official version</a>""", elem_id="oficial")
+                gr.HTML("""<a href="https://github.com/harisreedhar/Swap-Mukham#acknowledgements">📜 Acknowledgements</a>""", elem_id="thanks")
+                gr.HTML("""<a href="https://colab.research.google.com/github/harisreedhar/Swap-Mukham/blob/main/swap_mukham_colab.ipynb">☁️ Run in Colab</a>""", elem_id="colab")
 
 ## _________________________ GRADIO EVENTS _________________________
 
