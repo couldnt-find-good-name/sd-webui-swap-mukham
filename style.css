@@ -1,7 +1,3 @@
-#info {
-    color: #32CD32;
-	font-size: 16px;
-}
 #input_face {
     color: #ADD8E6;
 	font-size: 16px;
@@ -14,19 +10,91 @@
     color: #ADD8E6;
 	font-size: 16px;
 }
-#extension {
-    color: #ADD8E6;
-	font-size: 18px;
+
+#prev_image_size {
+	height: 690px;
 }
-#oficial {
-    color: #ADD8E6;
-	font-size: 18px;
+#prev_video_size {
+	height: 690px;
 }
-#thanks {
-    color: #ADD8E6;
-	font-size: 18px;
+
+/* CSS */
+#colab, #thanks, #extension, #oficial {
+	font-size: 16px;
+	text-align: center;
+	padding: 0.6em 2em;
+	border: none;
+	outline: none;
+	color: rgb(255, 255, 255);
+	background: #222;
+	cursor: pointer;
+	position: relative;
+	z-index: 0;
+	border-radius: 5px;
+	user-select: none;
+	-webkit-user-select: none;
+	touch-action: manipulation;
+	transition: background-color 0.3s, transform 0.2s;
 }
-#colab {
-    color: #ADD8E6;
+#colab:hover, #thanks:hover, #extension:hover, #oficial:hover {
+	background-color: #3f4958; /* Cambia el color de fondo en hover */
+	transform: scale(1.02); /* Agranda ligeramente el botón en hover */
+}
+
+#button_orange, #button_red, #button_default, #info {
 	font-size: 18px;
+	text-align: center;
+
+	border: none;
+	outline: none;
+	color: rgb(255, 255, 255);
+	cursor: pointer;
+	position: relative;
+	z-index: 0;
+	border-radius: 5px;
+	user-select: none;
+	-webkit-user-select: none;
+	touch-action: manipulation;
+	transition: background-color 0.2s, transform 0.2s;
+}
+/* INFO */
+#info {
+	padding: 0.6em 2em;
+	text-align: center;
+	font-size: 16px;
+}
+#info:hover {
+	background-color: #222; 
+	transform: scale(1.01); 
+}
+
+/* BUTTON SWAP */
+#button_orange {
+	padding: 0.6em 2em;
+	background: #ce5c19;
+}
+#button_orange:hover {
+
+	background-color: #f96a15; /* Cambia el color de fondo en hover */
+	transform: scale(1.02); /* Agranda ligeramente el botón en hover */
+}
+
+/* BUTTON CANCEL */
+#button_red {
+	padding: 0.6em 2em;
+	background: #b31a1a;
+}
+#button_red:hover {
+	background-color: red; /* Cambia el color de fondo en hover */
+	transform: scale(1.02); /* Agranda ligeramente el botón en hover */
+}
+
+/* BUTTON REMOVE */
+#button_default {
+	padding: 0.3em 2em;
+	background: #222;
+}
+#button_default:hover {
+	background-color: #3f4958; /* Cambia el color de fondo en hover */
+	transform: scale(1.02); /* Agranda ligeramente el botón en hover */
 }
