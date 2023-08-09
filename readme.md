@@ -9,7 +9,9 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 - This version does not work in Google Colab, sorry.
   
 ## Changes
-
+Changes 09/08/2023
+- stylized UI Buttons and info panel.
+  
 Changes 06/08/2023
 - Reordered some UI elements, moved Download Models button to a Tab.
 - Better Info panel.
