@@ -9,6 +9,9 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 - This version does not work in Google Colab, sorry.
   
 ## Changes
+Changes 10/08/2023
+- added gallery, now you can drag an drop images from gallery.
+
 Changes 09/08/2023
 - stylized UI Buttons and info panel.
   
