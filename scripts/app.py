@@ -16,15 +16,15 @@ from PIL import Image
 from tqdm import tqdm
 import concurrent.futures
 from moviepy.editor import VideoFileClip
-import requests
+from download_models import download_models_bt
+from gallery import gallery_txt2img, gallery_img2img, gallery_swap, gallery_others, update_galleries
 from face_swapper import Inswapper, paste_to_whole, place_foreground_on_background
 from face_analyser import detect_conditions, get_analysed_data, swap_options_list
 from face_enhancer import get_available_enhancer_names, load_face_enhancer_model, cv2_interpolations
 from face_parsing import init_parser, swap_regions, mask_regions, mask_regions_to_list, SoftErosion
 from utils import trim_video, StreamerThread, ProcessBar, open_directory, split_list_by_lengths, merge_img_sequence_from_ref
-from modules import generation_parameters_copypaste as params_copypaste
 import modules.scripts as scripts
-from modules import script_callbacks
+from modules import shared, generation_parameters_copypaste, script_callbacks
 
 root_path = os.getcwd()
 outputs_dir = os.path.join(root_path, "Outputs", "swap-mukham")
@@ -77,6 +77,35 @@ FACE_PARSER = None
 FACE_ENHANCER_LIST = ["NONE"]
 FACE_ENHANCER_LIST.extend(get_available_enhancer_names())
 FACE_ENHANCER_LIST.extend(cv2_interpolations)
+
+## _________________________ IMAGE GALLERY AUTOLOAD _________________________
+
+root_sd = os.getcwd()
+output_dirs = ["txt2img-images", "img2img-images", "swap-mukham"]
+others_dir = os.path.join(root_sd, "Outputs")
+txt2img_img_list = [] 
+img2img_img_list = [] 
+swap_img_list = [] 
+others_img_list = []
+
+for output_dir in output_dirs:
+    current_dir = os.path.join(root_sd, "Outputs", output_dir)
+    for root, dirs, files in os.walk(current_dir):
+        for file in files:
+            if file.endswith((".jpg", ".png", ".jpeg")):
+                img_path = os.path.join(root, file)
+                if output_dir == "txt2img-images":
+                    txt2img_img_list.append(img_path)
+                elif output_dir == "img2img-images":
+                    img2img_img_list.append(img_path)
+                elif output_dir == "swap-mukham":
+                    swap_img_list.append(img_path)
+for root, dirs, files in os.walk(others_dir):
+    for file in files:
+        if file.endswith((".jpg", ".png", ".jpeg")):
+            img_path = os.path.join(root, file)
+            if img_path not in txt2img_img_list and img_path not in img2img_img_list and img_path not in swap_img_list:
+                others_img_list.append(img_path)               
 
 ## _________________________ SET EXECUTION PROVIDER _________________________
 
@@ -134,7 +163,6 @@ def unload_models():
     time.sleep(5)
     yield ""
     return
-
 ## _________________________ MAIN PROCESS _________________________
 
 def process(
@@ -329,7 +357,7 @@ def process(
         OUTPUT_FILE = output_file
         WORKSPACE = output_path
         PREVIEW = cv2.imread(output_file)[:, :, ::-1]
-
+        
         yield get_finsh_text(start_time), *ui_after()
 
 ## _________________________ VIDEO _________________________
@@ -539,74 +567,16 @@ class Script(scripts.Script):
 
 def remove_showing_image():
     if OUTPUT_FILE is None:
-        yield "💬 No Image or Video generated."
+        yield "💬 Only removes latest generated image or video."
     else:
         try:
             base_filename = os.path.basename(OUTPUT_FILE)
             os.remove(OUTPUT_FILE)
             yield f"🖼️ {base_filename}: has been deleted..."
-            print("image removed")
         except FileNotFoundError:
             yield f"💢 {base_filename}: does not exist..."
     time.sleep(5)
     yield ""
-
-
-def download_models_bt():
-    models_download_dir = os.path.join(base_dir, "assets", "pretrained_models")
-    num_urls = len(urls)
-    num_downloaded = 0
-    for url in urls:
-        try:
-            response = requests.get(url, stream=True)
-            response.raise_for_status()
-            filename = os.path.basename(url)
-            file_path = os.path.join(models_download_dir, filename)
-
-            if os.path.exists(file_path):
-                yield f"💬 Checking availible models."
-                num_downloaded += 1
-                continue
-
-            total_size = int(response.headers.get('content-length', 0))
-            block_size = 1024 * 1024  # 1 MB
-            downloaded_size = 0
-            prev_progress = -1
-
-            with open(file_path, "wb") as f:
-                for data in response.iter_content(block_size):
-                    f.write(data)
-                    downloaded_size += len(data)
-                    percentage = round(downloaded_size / total_size * 100, 1)
-                    current_progress = int(percentage // 5)
-                    
-                    if current_progress > prev_progress:
-                        progress_bar = "🟩" * current_progress + "" * (50 - current_progress)
-                        total_size_mb = total_size / (1024 * 1024)  # Convert total_size to megabytes
-                        yield f"Downloading: {filename}({total_size_mb:.2f}) MB {progress_bar} Completed: {percentage:.1f}%"
-                        prev_progress = current_progress
-
-            num_downloaded += 1
-
-        except requests.exceptions.RequestException as e:
-            yield f"💢 Couldn't download {filename}. Error: {e}"
-        except Exception as e:
-            yield f"💢 Unknown error downloading {filename}. Error: {e}"
-
-    if num_downloaded == num_urls:
-        yield "🆗 All Models downloaded."
-    time.sleep(5)
-    yield ""
-
-urls = [
-    "https://huggingface.co/deepinsight/inswapper/resolve/main/inswapper_128.onnx",
-    "https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth",
-    "https://huggingface.co/bluefoxcreation/Codeformer-ONNX/resolve/main/codeformer.onnx",
-    "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth",
-    "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth",
-    "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x8.pth",
-    "https://github.com/zllrunning/face-makeup.PyTorch/raw/master/cp/79999_iter.pth",
-]
 
 with gr.Blocks() as interface:
     with gr.Row():
@@ -651,7 +621,6 @@ with gr.Blocks() as interface:
                 output_name = gr.Text(label="Output Name", value="Image", interactive=True, visible=False)
 
             with gr.Box():
-                gr.HTML("""<h4>Input Face</h4>""", elem_id="input_face")
                 source_image_input = gr.Image(label="Input Face", elem_id="input_face", type="filepath", interactive=True)
 
             with gr.Box(visible=False) as specific_face:
@@ -668,8 +637,7 @@ with gr.Blocks() as interface:
 
             with gr.Group():
                 with gr.Box():
-                    gr.HTML("""<h4>Target Face</h4>""", elem_id="target_face")
-                    input_type = gr.Radio(["Image", "Video", "Directory"], label="", value="Video", elem_id="target_checkbox")
+                    input_type = gr.Radio(["Image", "Video", "Directory"], label="Target Face", value="Image", elem_id="target_checkbox")
 
                 with gr.Box(visible=False) as input_image_group:
                     image_input = gr.Image(interactive=True, type="filepath", elem_id="preview_img_back")
@@ -697,19 +665,30 @@ with gr.Blocks() as interface:
             with gr.Row():
                 swap_button = gr.Button("✨ Swap", variant="primary", elem_id="button_orange")
                 cancel_button = gr.Button("⛔ Cancel", variant="stop", elem_id="button_red")
-                remove_image = gr.Button(value="❌ Remove", interactive=True, elem_id="button_default")
-
-            with gr.Row():
-                output_directory_button = gr.Button("📂 Open Results Folder", elem_id="button_default", visible=not USE_COLAB)
-                output_video_button = gr.Button("🎞 Open Image/Video", elem_id="button_default", visible=not USE_COLAB)
                 unload_models_button = gr.Button(value="🆓 Free VRAM", label="Unload Models", elem_id="button_default", visible=not USE_COLAB)
-            with gr.Box():
-                preview_image = gr.Image(label="Output", interactive=False, elem_id="prev_image_size")
-                preview_video = gr.Video(label="Output", interactive=False, visible=False, elem_id="prev_video_size")
 
             with gr.Row():
-                gr.HTML("""<a href="https://github.com/rauldlnx10/sd-webui-swap-mukham">🧩 Extension</a>""", elem_id="extension")
-                gr.HTML("""<a href="https://github.com/harisreedhar/Swap-Mukham">📝 Official version</a>""", elem_id="oficial")
+                output_directory_button = gr.Button("📂 Open Gallery Folder", elem_id="button_default", visible=not USE_COLAB)
+                output_video_button = gr.Button("🎞 Open Image/Video", elem_id="button_default", visible=not USE_COLAB)
+                refresh_button = gr.Button(value="🌆 Image Gallery Refresh", elem_id="button_default")
+                remove_image = gr.Button(value="❌ Remove", interactive=True, elem_id="button_default")
+            
+            with gr.Tab(label="Result Preview"):
+                preview_image = gr.Image(label="Output", interactive=False, visible=True, elem_id="prev_image_size")
+                preview_video = gr.Video(label="Output", interactive=False, visible=False, elem_id="prev_video_size")
+         
+            with gr.Tab("Swap"):
+                gallery_swap = gr.Gallery(swap_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="58vh")
+            with gr.Tab("Txt2img"):
+                gallery_txt = gr.Gallery(txt2img_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="58vh")
+            with gr.Tab("Img2img"):
+                gallery_img = gr.Gallery(img2img_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="58vh")
+            with gr.Tab("Others"):
+                gallery_other = gr.Gallery(others_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="58vh")
+
+            with gr.Row():
+                gr.HTML("""<a href="https://github.com/rauldlnx10/sd-webui-swap-mukham">🧩 Extension Github</a>""", elem_id="extension")
+                gr.HTML("""<a href="https://github.com/harisreedhar/Swap-Mukham">📝 Official version Github</a>""", elem_id="oficial")
                 gr.HTML("""<a href="https://github.com/harisreedhar/Swap-Mukham#acknowledgements">📜 Acknowledgements</a>""", elem_id="thanks")
                 gr.HTML("""<a href="https://colab.research.google.com/github/harisreedhar/Swap-Mukham/blob/main/swap_mukham_colab.ipynb">☁️ Run in Colab</a>""", elem_id="colab")
 
@@ -718,8 +697,10 @@ with gr.Blocks() as interface:
     unload_models_button.click(unload_models, outputs=info)
     button_models_download.click(fn=download_models_bt, outputs=info, show_progress=True,)
     remove_image.click(fn=remove_showing_image, outputs=info)
-    #send_to_img2img.click()
- 
+    refresh_button.click(update_galleries, outputs=[gallery_txt, gallery_img, gallery_swap, gallery_other])
+
+    preview_image.change(update_galleries, outputs=[gallery_txt, gallery_img, gallery_swap, gallery_other])
+
     set_slider_range_event = set_slider_range_btn.click(video_changed, inputs=[video_input], outputs=[start_frame, end_frame, video_fps],)
 
     trim_and_reload_event = trim_and_reload_btn.click(
@@ -821,6 +802,7 @@ with gr.Blocks() as interface:
     output_video_button.click(lambda: open_directory(path=OUTPUT_FILE), inputs=None, outputs=None)
 
 if __name__ == "__main__":
+    txt2img_img_list, img2img_img_list, swap_img_list = update_galleries()
     if USE_COLAB:
         print("Running in colab mode")
 
