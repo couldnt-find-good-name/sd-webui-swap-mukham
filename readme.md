@@ -6,7 +6,7 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 
 # Important
 - Output folder is stable-diffusion-webui\Outputs\swap-mukham, trying to make output folder change work.
-- This version does not work in Google Colab, sorry.
+- Incompatibility with Roop Extension, check ## Troubleshooting 
   
 ## Changes
 Changes 10/08/2023
