@@ -31,7 +31,7 @@ changes 04/08/2023
 
   
 ### Screenshot
-![10](screenshot/working.png)
+![10](screenshot/working_.png)
 
 ## Installation
 
