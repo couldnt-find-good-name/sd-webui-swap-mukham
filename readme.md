@@ -4,9 +4,9 @@
 
 A simple face swapper adapted to Automatic1111 from [harisreedhar](https://github.com/harisreedhar/Swap-Mukham) work, and based on insightface inswapper heavily inspired by roop.
 
-# Important
+### Important
 - Output folder is stable-diffusion-webui\Outputs\swap-mukham, trying to make output folder change work.
-- Incompatibility with Roop Extension, check ## Troubleshooting 
+- Incompatibility with Roop Extension, check Troubleshooting section.
   
 ## Changes
 Changes 10/08/2023
