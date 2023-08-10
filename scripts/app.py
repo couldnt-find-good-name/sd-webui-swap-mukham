@@ -152,13 +152,22 @@ def load_face_parser_model(path=os.path.join(models_dir, "79999_iter.pth")):
 
 def unload_models():
     global FACE_SWAPPER, FACE_PARSER, FACE_ENHANCER, FACE_ANALYSER
-
-    # Liberar la memoria VRAM
-    FACE_ANALYSER = None
-    FACE_SWAPPER = None
-    FACE_PARSER = None
-    FACE_ENHANCER = None
-    
+    if FACE_ANALYSER is not None:
+        FACE_ANALYSER.release()
+        FACE_ANALYSER = None
+        print(f"🤖 FACE ANALYSER Unloaded from GPU")
+    elif FACE_SWAPPER is not None:
+        FACE_SWAPPER.release()
+        FACE_SWAPPER = None
+        print(f"🤖 FACE SWAPPER Unloaded from GPU")
+    elif FACE_PARSER is not None:
+        FACE_PARSER.release()
+        FACE_PARSER = None
+        print(f"🤖 FACE PARSER Unloaded from GPU")
+    elif FACE_ENHANCER is not None:
+        FACE_ENHANCER.release()
+        FACE_ENHANCER = None
+        print(f"🤖 FACE ENHANCER Unloaded from GPU")
     yield "🤖 Models Unloaded from GPU"
     time.sleep(5)
     yield ""
@@ -677,7 +686,7 @@ with gr.Blocks() as interface:
                 preview_image = gr.Image(label="Output", interactive=False, visible=True, elem_id="prev_image_size")
                 preview_video = gr.Video(label="Output", interactive=False, visible=False, elem_id="prev_video_size")
          
-            with gr.Tab("Swap"):
+            with gr.Tab("Swap-Outputs"):
                 gallery_swap = gr.Gallery(swap_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="58vh")
             with gr.Tab("Txt2img"):
                 gallery_txt = gr.Gallery(txt2img_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="58vh")
