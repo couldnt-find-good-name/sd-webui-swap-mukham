@@ -136,8 +136,6 @@ def update_galleries():
     return txt2img_img_list, img2img_img_list, swap_img_list, others_img_list
 
 ## _________________________ VIDEO GALLERY _________________________
-
-
 ##video_list = []
 ##for root, dirs, files in os.walk(outputs_dir):
 ##    video_list = []
@@ -149,7 +147,6 @@ def update_galleries():
 ##def update_video_gallery():
 ##    # TODO LOGIC
 ##    pass
-
 ## _________________________ SET EXECUTION PROVIDER _________________________
 
 PROVIDER = ["CPUExecutionProvider"]
