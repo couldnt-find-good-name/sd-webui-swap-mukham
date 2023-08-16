@@ -19,7 +19,7 @@ Changes 10/08/2023
 Changes 09/08/2023
 - stylized UI Buttons and info panel.
   
-full changelog: ![10](https://github.com/rauldlnx10/sd-webui-swap-mukham/blob/main/change_log.txt)
+[Full Changelog](https://github.com/rauldlnx10/sd-webui-swap-mukham/blob/main/change_log.txt)
 
   
 ### Screenshot
