@@ -10,7 +10,7 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
   
 ## Changes
 Changes 16/08/2023
-- Updated Gallery.
+- Updated Gallery, added Others Tab.
 - Added more enhancers.
   
 Changes 10/08/2023
