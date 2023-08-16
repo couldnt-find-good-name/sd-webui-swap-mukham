@@ -31,7 +31,7 @@ Changes 09/08/2023
 
 ## Troubleshooting 
 
-How to solve roop conflicts:
+### How to solve roop conflicts:
 [Guide](https://github.com/rauldlnx10/sd-webui-swap-mukham/issues/6#issuecomment-1666626342)
   
 ## Disclaimer
