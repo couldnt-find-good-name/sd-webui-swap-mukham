@@ -19,19 +19,7 @@ Changes 10/08/2023
 Changes 09/08/2023
 - stylized UI Buttons and info panel.
   
-Changes 06/08/2023
-- Reordered some UI elements, moved Download Models button to a Tab.
-- Better Info panel.
-
-Changes 05/08/2023
-- Added Codeformer Enhancer from original source [Swap-Mukham](https://github.com/harisreedhar/Swap-Mukham).
-- Added tqdm>=4.50.0 to requirements.txt, it must solve tdqm error at launch, (maybe causes conflicts with other extensions).
-
-changes 04/08/2023
-- Added Delete Button to delete the last generated image or video.
-- Disabled output folder change, now default output folder is automatic1111 outputs folder/swap-mukham
-- Moved Enhancement and Keep Temp Sequence to Swap Tab.
-- Added Download Models info and progress bar.
+full changelog: ![10](https://github.com/rauldlnx10/sd-webui-swap-mukham/blob/main/change_log.txt)
 
   
 ### Screenshot
