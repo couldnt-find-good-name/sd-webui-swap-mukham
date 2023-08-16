@@ -9,6 +9,10 @@ A simple face swapper adapted to Automatic1111 from [harisreedhar](https://githu
 - Incompatibility with Roop Extension, check Troubleshooting section.
   
 ## Changes
+Changes 16/08/2023
+- Updated Gallery.
+- Added more enhancers.
+  
 Changes 10/08/2023
 - added gallery, now you can drag an drop images from gallery.
 
