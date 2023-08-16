@@ -39,7 +39,6 @@ except ImportError:
 outputs_dir = '/content/outputs' if USE_COLAB else os.path.join(root_path, "Outputs", "swap-mukham")
 
 if not os.path.exists(outputs_dir):
-    # Si no existe, crea el directorio
     os.makedirs(outputs_dir)
     print(f"{outputs_dir} folder created.")
 
@@ -78,18 +77,22 @@ FACE_ENHANCER_LIST = ["NONE"]
 FACE_ENHANCER_LIST.extend(get_available_enhancer_names())
 FACE_ENHANCER_LIST.extend(cv2_interpolations)
 
-## _________________________ IMAGE GALLERY AUTOLOAD _________________________
+## _________________________ IMAGE GALLERY _________________________
 
-root_sd = os.getcwd()
+txt2img_dir = os.path.join(root_path, "Outputs", "txt2img-images")
+img2img_dir = os.path.join(root_path, "Outputs", "img2img-images")
+swap_dir = os.path.join(root_path, "Outputs", "swap-mukham")
+others_dir = os.path.join(root_path, "Outputs")
 output_dirs = ["txt2img-images", "img2img-images", "swap-mukham"]
-others_dir = os.path.join(root_sd, "Outputs")
+
 txt2img_img_list = [] 
 img2img_img_list = [] 
 swap_img_list = [] 
-others_img_list = []
+others_img_list = [] 
+img_list = []
 
 for output_dir in output_dirs:
-    current_dir = os.path.join(root_sd, "Outputs", output_dir)
+    current_dir = os.path.join(root_path, "Outputs", output_dir)
     for root, dirs, files in os.walk(current_dir):
         for file in files:
             if file.endswith((".jpg", ".png", ".jpeg")):
@@ -105,7 +108,47 @@ for root, dirs, files in os.walk(others_dir):
         if file.endswith((".jpg", ".png", ".jpeg")):
             img_path = os.path.join(root, file)
             if img_path not in txt2img_img_list and img_path not in img2img_img_list and img_path not in swap_img_list:
-                others_img_list.append(img_path)               
+                others_img_list.append(img_path)     
+
+def get_image_list(directory):
+    img_list = []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith((".jpg", ".png", ".jpeg")):
+                img_path = os.path.join(root, file)
+                img_list.append(img_path)
+    return img_list
+
+def update_galleries():
+    txt2img_img_list = get_image_list(txt2img_dir)
+    img2img_img_list = get_image_list(img2img_dir)
+    swap_img_list = get_image_list(swap_dir)
+    
+    txt2img_img_list_set = set(txt2img_img_list)
+    img2img_img_list_set = set(img2img_img_list)
+    swap_img_list_set = set(swap_img_list)
+    
+    others_img_list = []
+    for img_path in get_image_list(others_dir):
+        if img_path not in txt2img_img_list_set and img_path not in img2img_img_list_set and img_path not in swap_img_list_set:
+            others_img_list.append(img_path)
+            
+    return txt2img_img_list, img2img_img_list, swap_img_list, others_img_list
+
+## _________________________ VIDEO GALLERY _________________________
+
+
+##video_list = []
+##for root, dirs, files in os.walk(outputs_dir):
+##    video_list = []
+##    for file in files:
+##        if file.endswith(".mp4"):
+##            video_path = os.path.join(root, file)
+##            video_list.append(video_path)
+##
+##def update_video_gallery():
+##    # TODO LOGIC
+##    pass
 
 ## _________________________ SET EXECUTION PROVIDER _________________________
 
@@ -588,6 +631,7 @@ def remove_showing_image():
     yield ""
 
 with gr.Blocks() as interface:
+
     with gr.Row():
         with gr.Column(scale=0.4):
             with gr.Tab("🌟 Swap", elem_id="swap_tab", style={"background-color": "#ff6347"}):
@@ -657,13 +701,13 @@ with gr.Blocks() as interface:
                     with gr.Accordion("✂️ Video Edit", open=False):
                         with gr.Column():
                             with gr.Row():
-                                set_slider_range_btn = gr.Button("Get Frames Range", interactive=True, elem_id="button_default")
+                                set_slider_range_btn = gr.Button("Get Frames Range", interactive=True)
                                 show_trim_preview_btn = gr.Checkbox(label="Show Frame Preview", value=True, interactive=True)
 
                             video_fps = gr.Number(value=30, interactive=False, label="Fps", visible=False)
                             start_frame = gr.Slider(minimum=0, maximum=1, value=0, step=1, interactive=True, label="◀️ Start Frame")
                             end_frame = gr.Slider(minimum=0, maximum=1, value=1, step=1, interactive=True, label="▶️ End Frame")
-                        trim_and_reload_btn = gr.Button("Trim and Reload", variant="primary", interactive=True, elem_id="button_default")
+                        trim_and_reload_btn = gr.Button("Trim and Reload", variant="primary", interactive=True)
 
                 with gr.Box(visible=False) as input_directory_group:
                     direc_input = gr.Text(label="Path", interactive=True)
@@ -672,34 +716,46 @@ with gr.Blocks() as interface:
             info = gr.HTML(value="", elem_id="info", interactive=False)
 
             with gr.Row():
-                swap_button = gr.Button("✨ Swap", variant="primary", elem_id="button_orange")
-                cancel_button = gr.Button("⛔ Cancel", variant="stop", elem_id="button_red")
-                unload_models_button = gr.Button(value="🆓 Free VRAM", label="Unload Models", elem_id="button_default", visible=not USE_COLAB)
+                swap_button = gr.Button("✨ Swap", variant="primary")
+                cancel_button = gr.Button("⛔ Cancel", variant="stop")
+                unload_models_button = gr.Button(value="🆓 Free VRAM", label="Unload Models", visible=not USE_COLAB)
 
             with gr.Row():
-                output_directory_button = gr.Button("📂 Open Gallery Folder", elem_id="button_default", visible=not USE_COLAB)
-                output_video_button = gr.Button("🎞 Open Image/Video", elem_id="button_default", visible=not USE_COLAB)
-                refresh_button = gr.Button(value="🌆 Image Gallery Refresh", elem_id="button_default")
-                remove_image = gr.Button(value="❌ Remove", interactive=True, elem_id="button_default")
-            
+                output_directory_button = gr.Button("📂 Open Gallery Folder")
+                output_video_button = gr.Button("🎞 Open Image/Video")
+                refresh_button = gr.Button(value="🌆 Image Gallery Refresh")
+                update_button = gr.Button(value="Video Gallery Refresh", visible=False)
+                remove_image = gr.Button(value="❌ Remove Generated", interactive=True)
+                            
             with gr.Tab(label="Result Preview"):
                 preview_image = gr.Image(label="Output", interactive=False, visible=True, elem_id="prev_image_size")
                 preview_video = gr.Video(label="Output", interactive=False, visible=False, elem_id="prev_video_size")
          
             with gr.Tab("Swap-Outputs"):
-                gallery_swap = gr.Gallery(swap_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="58vh")
+                gallery_swap = gr.Gallery(swap_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="56vh")
             with gr.Tab("Txt2img"):
-                gallery_txt = gr.Gallery(txt2img_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="58vh")
+                gallery_txt = gr.Gallery(txt2img_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="56vh")
             with gr.Tab("Img2img"):
-                gallery_img = gr.Gallery(img2img_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="58vh")
+                gallery_img = gr.Gallery(img2img_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="56vh")
             with gr.Tab("Others"):
-                gallery_other = gr.Gallery(others_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="58vh")
+                gallery_other = gr.Gallery(others_img_list, elem_id="Gallery_css", preview=False).style(grid=6, object_fit="contain", height="56vh")
+            
+##            with gr.Tab("Videos"):
+##                videos = video_list
+##                video_gal = []
+##                video_gal_upd = gr.Button(value="Update", elem_id="button_orange", visible=True)
+##                with gr.Row(elem_id="videos_tab"):
+##                    # Para cada nombre de archivo de video, crear una columna con un componente HTML que muestra el video
+##                    for file in video_list:
+##                        with gr.Column():
+##                            video_gal = gr.Video(file)
+##                video_gal_upd.click(update_video_gallery)
 
             with gr.Row():
-                gr.HTML("""<a href="https://github.com/rauldlnx10/sd-webui-swap-mukham">🧩 Extension Github</a>""", elem_id="extension")
-                gr.HTML("""<a href="https://github.com/harisreedhar/Swap-Mukham">📝 Official version Github</a>""", elem_id="oficial")
-                gr.HTML("""<a href="https://github.com/harisreedhar/Swap-Mukham#acknowledgements">📜 Acknowledgements</a>""", elem_id="thanks")
-                gr.HTML("""<a href="https://colab.research.google.com/github/harisreedhar/Swap-Mukham/blob/main/swap_mukham_colab.ipynb">☁️ Run in Colab</a>""", elem_id="colab")
+                gr.HTML("""<a href="https://github.com/rauldlnx10/sd-webui-swap-mukham">🧩 Extension Github</a>""", elem_id="urls")
+                gr.HTML("""<a href="https://github.com/harisreedhar/Swap-Mukham">📝 Official version Github</a>""", elem_id="urls")
+                gr.HTML("""<a href="https://github.com/harisreedhar/Swap-Mukham#acknowledgements">📜 Acknowledgements</a>""", elem_id="urls")
+                gr.HTML("""<a href="https://colab.research.google.com/github/harisreedhar/Swap-Mukham/blob/main/swap_mukham_colab.ipynb">☁️ Run in Colab</a>""", elem_id="urls")
 
 ## _________________________ GRADIO EVENTS _________________________
 
