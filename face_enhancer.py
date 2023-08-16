@@ -5,25 +5,31 @@ import gfpgan
 from PIL import Image
 from upscaler.RealESRGAN import RealESRGAN
 from upscaler.codeformer import CodeFormerEnhancer
+from upscaler.GPEN import GPEN
+from upscaler.restoreformer import RestoreFormer
 
 def gfpgan_runner(img, model):
     _, imgs, _ = model.enhance(img, paste_back=True, has_aligned=True)
     return imgs[0]
 
-
 def realesrgan_runner(img, model):
     img = model.predict(img)
     return img
 
+def gpen_runner(img, model):
+    img = model.enhance(img)
+    return img
 
 def codeformer_runner(img, model):
     img = model.enhance(img)
     return img
 
-
 supported_enhancers = {
     "CodeFormer": ("./assets/pretrained_models/codeformer.onnx", codeformer_runner),
     "GFPGAN": ("./assets/pretrained_models/GFPGANv1.4.pth", gfpgan_runner),
+    "GPEN-BFR-512": ("./assets/pretrained_models/GPEN-BFR-512.onnx", gpen_runner),
+    "GPEN-BFR-256": ("./assets/pretrained_models/GPEN-BFR-256.onnx", gpen_runner), 
+    "Restoreformer": ("./assets/pretrained_models/restoreformer.onnx", gpen_runner),  
     "REAL-ESRGAN 2x": ("./assets/pretrained_models/RealESRGAN_x2.pth", realesrgan_runner),
     "REAL-ESRGAN 4x": ("./assets/pretrained_models/RealESRGAN_x4.pth", realesrgan_runner),
     "REAL-ESRGAN 8x": ("./assets/pretrained_models/RealESRGAN_x8.pth", realesrgan_runner)
@@ -49,6 +55,12 @@ def load_face_enhancer_model(name='GFPGAN', device="cpu"):
         model = CodeFormerEnhancer(model_path=model_path, device=device)
     elif name == 'GFPGAN':
         model = gfpgan.GFPGANer(model_path=model_path, upscale=1, device=device)
+    elif name == 'GPEN-BFR-512':
+        model = GPEN(model_path=model_path, provider=["CPUExecutionProvider"])
+    elif name == 'GPEN-BFR-256':
+        model = GPEN(model_path=model_path, provider=["CPUExecutionProvider"])
+    elif name == 'Restoreformer':
+        model = GPEN(model_path=model_path, provider=["CPUExecutionProvider"])
     elif name == 'REAL-ESRGAN 2x':
         model = RealESRGAN(device, scale=2)
         model.load_weights(model_path, download=False)
